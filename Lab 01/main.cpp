@@ -25,13 +25,15 @@ myObjType myObj;
 
 // global variable
 
-bool m_Smooth = FALSE;
+bool m_Smooth = TRUE;
 bool m_Highlight = FALSE;
 GLfloat angle = 0;   /* in degrees */
 GLfloat angle2 = 0;   /* in degrees */
 GLfloat zoom = 1.0;
 int mouseButton = 0;
 int moving, startx, starty;
+
+float mat_diffuse[] = { 0.1f, 0.5f, 0.8f, 1.0f };
 
 #define NO_OBJECT 4;
 int current_object = 0;
@@ -72,7 +74,7 @@ void display(void)
 	float mat_specular[] = { 0.3f, 0.3f, 0.3f, 1.0f };
 	float mat_ambient[] = { 0.3f, 0.3f, 0.3f, 1.0f };
 	float mat_ambient_color[] = { 0.8f, 0.8f, 0.2f, 1.0f };
-	float mat_diffuse[] = { 0.1f, 0.5f, 0.8f, 1.0f };
+	// float mat_diffuse[] = { 0.1f, 0.5f, 0.8f, 1.0f }; - moved to mesh.h
 	float shininess = 20;
 	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
@@ -112,7 +114,9 @@ void keyboard (unsigned char key, int x, int y)
 		break;			
 	case 's':
 	case 'S':
+		cout << "Switching shading mode" << endl;
 		m_Smooth = !m_Smooth;
+		glShadeModel(m_Smooth ? GL_SMOOTH : GL_FLAT); // Lab 2 optional task
 		break;
 	case 'h':
 	case 'H':
@@ -197,6 +201,7 @@ int main(int argc, char **argv)
 
 
 	//cout << "1-4: Draw different objects"<<endl;
+	cout << "O: Save object to file" << endl;
 	cout << "S: Toggle Smooth Shading"<<endl;
 	cout << "H: Toggle Highlight"<<endl;
 	cout << "W: Draw Wireframe"<<endl;

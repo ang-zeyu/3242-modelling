@@ -1,5 +1,19 @@
 #pragma once
 
+#include "math.h"
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <stdio.h>
+#include <fstream>
+#include <iostream>
+#include <vector>
+#include <list>
+#include <map>
+#include <queue>
+#include <iomanip>
+using namespace std;
+
 // maximum number of vertices and triangles
 #define MAXV 1000000
 #define MAXT 1000000
@@ -14,7 +28,7 @@ inline OrTri enext(OrTri ot)
 {
 	int v = ver(ot);
 	return makeOrTri(idx(ot),
-		v < 3 ? (v + 1) % 3 : 3 + ((v - 1) % 3));
+		v < 3 ? ((v + 1) % 3) : (3 + ((v - 1) % 3)));
 };
 inline OrTri sym(OrTri ot)
 {
@@ -28,8 +42,11 @@ class myObjType {
 	int tcount = 0;
 
 	double vlist[MAXV][3];   // vertices list
+	list<int> vToTList[MAXV];   // vertex : triangle list, for vertex normal calculation
+	double vnlist[MAXV][3];  // vertex normal list
+
 	int tlist[MAXT][3];      // triangle list
-	int fnlist[MAXT][3];     // fnext list for future (not this assignment)
+	int fnlist[MAXT][3];     // fnext list
 	double nlist[MAXT][3];   // storing triangle normals
 	
 	double lmax[3];          // the maximum coordinates of x,y,z
@@ -38,9 +55,14 @@ class myObjType {
 	int statMinAngle[18]; // each bucket is  degrees has a 10 degree range from 0 to 180 degree
 	int statMaxAngle[18]; 
 
+	int numCc = 0;
 
 public:
-	myObjType() { vcount = 0; tcount = 0; };
+	myObjType()
+	{
+		vcount = 0;
+		tcount = 0;
+	};
 	void readFile(char* filename);  // assumming file contains a manifold
 	void read3dsFile(char* filename); // Optional Task 4
 	void writeFile(char* filename);  
@@ -52,7 +74,10 @@ public:
 
 private:
 	void computeNormals();
+	void computeVertexNormals();
 	void computeFnlist();
+	void computeNumCc();
+	bool orientTriangles();
 };
 
 
