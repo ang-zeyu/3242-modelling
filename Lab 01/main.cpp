@@ -19,6 +19,7 @@ using namespace std;
 
 
 //#define M_PI 3.141592654
+#define WINDOW_LENGTH_WIDTH 600.0
 
 myObjType myObj;
 
@@ -32,6 +33,10 @@ GLfloat angle2 = 0;   /* in degrees */
 GLfloat zoom = 1.0;
 int mouseButton = 0;
 int moving, startx, starty;
+
+// For lab 2 optional task - user select marquee
+int currX, currY;
+bool isSelecting = false;
 
 float mat_diffuse[] = { 0.1f, 0.5f, 0.8f, 1.0f };
 
@@ -83,11 +88,29 @@ void display(void)
 	glMaterialf(GL_FRONT, GL_SHININESS, shininess);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	glPushMatrix();
 		gluLookAt(0, 0, 10, 0, 0, 0, 0, 1, 0);
+
+		// Lab 2 Optional task - user select marquee
+		if (isSelecting)
+		{
+			double nearPlaneLength = tan(20.0 / 180.0 * M_PI) * 5 * 2;
+			glPushMatrix();
+			glColor4d(0, 30, 200, 0.3);
+			glTranslated(0, 0, 5.0);
+			glRectd(
+				(startx - WINDOW_LENGTH_WIDTH / 2.0) / WINDOW_LENGTH_WIDTH * nearPlaneLength,
+				((WINDOW_LENGTH_WIDTH - starty) - WINDOW_LENGTH_WIDTH / 2.0) / WINDOW_LENGTH_WIDTH * nearPlaneLength,
+				(currX - WINDOW_LENGTH_WIDTH / 2.0) / WINDOW_LENGTH_WIDTH * nearPlaneLength,
+				((WINDOW_LENGTH_WIDTH - currY) - WINDOW_LENGTH_WIDTH / 2.0) / WINDOW_LENGTH_WIDTH * nearPlaneLength);
+			glPopMatrix();
+		}
+
 		glRotatef(angle2, 1.0, 0.0, 0.0);
 		glRotatef(angle, 0.0, 1.0, 0.0);
 		glScalef(zoom, zoom, zoom);
+
 		myObj.draw();
 	glPopMatrix();
 	glutSwapBuffers ();
@@ -155,36 +178,65 @@ void keyboard (unsigned char key, int x, int y)
 }
 
 
-
-void
-mouse(int button, int state, int x, int y)
+void mouse(int button, int state, int x, int y)
 {
-  if (state == GLUT_DOWN) {
-	mouseButton = button;
-    moving = 1;
-    startx = x;
-    starty = y;
-  }
-  if (state == GLUT_UP) {
-	mouseButton = button;
-    moving = 0;
-  }
+	// Slightly modified for lab 2 optional task - user select marquee
+	if (state == GLUT_DOWN)
+	{
+		mouseButton = button;
+
+		if (glutGetModifiers() == GLUT_ACTIVE_CTRL)
+		{
+			isSelecting = true;
+		}
+		else
+		{
+			moving = 1;
+		}
+
+		startx = x;
+		starty = y;
+    }
+	else if (state == GLUT_UP)
+	{
+		mouseButton = button;
+		moving = 0;
+		isSelecting = false;
+    }
+
+	// Lab 2 Optional task - user select marquee
+	currX = x;
+	currY = y;
+
+	glutPostRedisplay();
+	cout << "Mouse action detected - x y: " << x << " " << y << endl;
 }
 
 void motion(int x, int y)
 {
-  if (moving) {
-	if(mouseButton==GLUT_LEFT_BUTTON)
+    if (moving)
 	{
-		angle = angle + (x - startx);
-		angle2 = angle2 + (y - starty);
+		if (mouseButton == GLUT_LEFT_BUTTON)
+		{
+			angle = angle + (x - startx);
+			angle2 = angle2 + (y - starty);
+		}
+		else
+		{
+			zoom += ((y - starty) * 0.001);
+		}
+
+		startx = x;
+		starty = y;
+		glutPostRedisplay();
+    }
+	else if (isSelecting)
+	{
+		// Lab 2 Optional task - user select marquee
+		currX = x;
+		currY = y;
+		glutPostRedisplay();
 	}
-	else zoom += ((y-starty)*0.001);
-    startx = x;
-    starty = y;
-	glutPostRedisplay();
-  }
-  
 }
 
 int main(int argc, char **argv)
@@ -214,7 +266,7 @@ int main(int argc, char **argv)
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-	glutInitWindowSize (600, 600);
+	glutInitWindowSize (WINDOW_LENGTH_WIDTH, WINDOW_LENGTH_WIDTH);
 	glutInitWindowPosition (50, 50);
 	glutCreateWindow ("CS3241 Assignment 3");
 	glClearColor (1.0,1.0,1.0, 1.0);

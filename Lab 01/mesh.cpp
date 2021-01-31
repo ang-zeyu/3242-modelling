@@ -28,6 +28,9 @@ using namespace std;
 extern float mat_diffuse[];
 float rmat_diffuse[] = { 1, 0, 0, 1.0f }; // Lab 2 boundary edge visualisation optional task
 
+extern int startx, starty, currX, currY;
+extern bool isSelecting;
+
 void myObjType::draw() {
 
 	glEnable(GL_LIGHTING);
@@ -35,12 +38,15 @@ void myObjType::draw() {
 	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
 	glPushMatrix();
+
 	double longestSide = 0.0;
 	for (int i = 0; i < 3; i++)
 		if ((lmax[i] - lmin[i]) > longestSide)
 			longestSide = (lmax[i] - lmin[i]);
-	glScalef(4.0 / longestSide, 4.0 / longestSide, 4.0 / longestSide);
+	double scaleFactor = 4.0 / longestSide;
+	glScalef(scaleFactor, scaleFactor, scaleFactor);
 	glTranslated(-(lmin[0] + lmax[0]) / 2.0, -(lmin[1] + lmax[1]) / 2.0, -(lmin[2] + lmax[2]) / 2.0);
+
 	for (int i = 1; i <= tcount; i++)
 	{
 		glBegin(GL_POLYGON);
@@ -248,10 +254,12 @@ void myObjType::readFile(char* filename)
 					vToTList[tlist[tcount][k]].push_back(tcount); // lab 2 vertex normal calculation optional task
 					i = j;
 					fnlist[tcount][k] = 0;
-					while (linec[j] != ' ') j++;
+					// while (linec[j] != ' ') j++;
 				}
 
 				// Support quadrilaterals
+				while (linec[i] == ' ') i++;
+
 				if (i < line.size())
 				{
 					tcount++;
