@@ -1,0 +1,8 @@
+﻿  mesh.cpp
+c:\users\angze\google drive\cs year 3 semester 2\cs3242 3d modelling and animation\lab1\lab 01 version 1.0 skeleton\lab 01\mesh.cpp(14): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+c:\users\angze\google drive\cs year 3 semester 2\cs3242 3d modelling and animation\lab1\lab 01 version 1.0 skeleton\lab 01\mesh.cpp(38): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+c:\users\angze\google drive\cs year 3 semester 2\cs3242 3d modelling and animation\lab1\lab 01 version 1.0 skeleton\lab 01\mesh.cpp(136): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+c:\users\angze\google drive\cs year 3 semester 2\cs3242 3d modelling and animation\lab1\lab 01 version 1.0 skeleton\lab 01\mesh.cpp(206): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+c:\users\angze\google drive\cs year 3 semester 2\cs3242 3d modelling and animation\lab1\lab 01 version 1.0 skeleton\lab 01\mesh.cpp(344): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+c:\users\angze\google drive\cs year 3 semester 2\cs3242 3d modelling and animation\lab1\lab 01 version 1.0 skeleton\lab 01\mesh.cpp(345): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+  Lab 01.vcxproj -> C:\Users\angze\Google Drive\CS Year 3 Semester 2\CS3242 3D Modelling and Animation\lab1\Lab 01 version 1.0 skeleton\Debug\Lab 01.exe
