@@ -64,7 +64,6 @@ public:
 		tcount = 0;
 	};
 	void readFile(char* filename);  // assumming file contains a manifold
-	void read3dsFile(char* filename); // Optional Task 4
 	void writeFile(char* filename);  
 	void draw();  
     void computeStat();
@@ -73,6 +72,11 @@ public:
 	inline OrTri fnext(OrTri t);
 
 private:
+	void reset();
+	void readObjFile(char* filename);
+	void read3dsFile(char* filename); // Optional Task 4
+	void postReadFile();
+
 	void computeNormals();
 	void computeVertexNormals();
 	void computeFnlist();

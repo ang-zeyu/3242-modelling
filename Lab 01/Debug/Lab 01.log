@@ -1,4 +1,9 @@
-﻿  main.cpp
-c:\users\zeyu\desktop\3242-modelling\lab 01\main.cpp(226): warning C4244: '+=': conversion from 'double' to 'GLfloat', possible loss of data
-c:\users\zeyu\desktop\3242-modelling\lab 01\main.cpp(269): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+﻿  mesh.cpp
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(3): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(47): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(332): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(342): warning C4018: '<': signed/unsigned mismatch
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(351): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(818): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(819): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
   Lab 01.vcxproj -> C:\Users\ZeYu\Desktop\3242-modelling\Debug\Lab 01.exe

@@ -148,9 +148,9 @@ void keyboard (unsigned char key, int x, int y)
 	// Optional task 4
 	case 't':
 	case 'T':
-		cout << "Enter the .stl filename you want to read:";
+		cout << "Enter the filename you want to read:";
 		cin >> filename;
-		myObj.read3dsFile(filename);
+		myObj.readFile(filename);
 		break;
 	case 'o':
 	case 'O':
@@ -249,8 +249,6 @@ int main(int argc, char **argv)
 	cout << "Enter the filename you want to open:";
 	cin >> filename;
 	myObj.readFile(filename);
-
-
 
 	//cout << "1-4: Draw different objects"<<endl;
 	cout << "O: Save object to file" << endl;

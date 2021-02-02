@@ -127,77 +127,174 @@ void myObjType::writeFile(char* filename)
 	// Task 3 end
 }
 
+void myObjType::readFile(char* filename)
+{
+	reset();
+
+	int len = strlen(filename);
+	if (filename[len - 3] == '3' && filename[len - 2] == 'd' && filename[len - 1] == 's')
+	{
+		read3dsFile(filename);
+	}
+	else
+	{
+		readObjFile(filename);
+	}
+}
+
+void myObjType::reset()
+{
+	for (int i = 0; i < vcount; i++)
+		vToTList[i] = list<int>();
+	for (int i = 0; i < 18; i++)
+	{
+		statMinAngle[i] = 0;
+		statMaxAngle[i] = 0;
+	}
+
+	tcount = vcount = 0;
+	numCc = 0;
+}
+
 void myObjType::read3dsFile(char* filename)
 {
-	cout << "Opening " << filename << endl;
-	ifstream inFile;
-	inFile.open(filename);
-	if (!inFile.is_open()) {
+	cout << "Opening 3ds file: " << filename << endl;
+	FILE* fp;
+	fopen_s(&fp, filename, "rb");
+	if (fp == NULL) {
 		cout << "We cannot find your file " << filename << endl;
 		exit(1);
 	}
 
-	string line;
-	int i, j;
-	bool firstVertex = 1;
-	double currCood;
+	unsigned short id = 0;
+	unsigned int len = 0;
 
-	while (getline(inFile, line))
+	while (ftell(fp) != -1)
 	{
-		if ((line[0] == 'v' || line[0] == 'f') && line[1] == ' ')
+		id = 0; len = 0;
+		fread((char*)&id, 1, 2, fp);
+		fread((char*)&len, 1, 4, fp);
+
+		cout << "id " << id << " len " << len << endl;
+
+		if (id == 0x4D4D // main chunk
+			|| id == 0x3D3D // 3d editor chunk
+			|| id == 0x4100) // triangle mesh
 		{
-			if (line[0] == 'v')
+			cout << "Entering chunk " << id << endl;
+			continue;
+		}
+		else if (id == 0x4000)
+		{
+			// object chunk has an ASCII name to skip
+			// http://paulbourke.net/dataformats/3ds/
+			char name[64];
+			fread(name, 1, 64, fp);
+
+			int endIdx = 0;
+			for (; endIdx < 64; endIdx++)
+			{
+				if (name[endIdx] == '\0')
+				{
+					endIdx++;
+					break;
+				}
+			}
+
+			cout << "Object chunk name was n characters long: " << endIdx << " ftell " << ftell(fp) - 64 << endl;
+
+			fseek(fp, endIdx - 64, SEEK_CUR);
+		}
+		else if (id == 0x4110) // vertices list
+		{
+			bool firstVertex = 1;
+
+			unsigned short numVertices = 0;
+			fread((char*)&numVertices, 1, 2, fp);
+
+			float x = 0;
+			float y = 0;
+			float z = 0;
+
+			for (short i = 0; i < numVertices; i++)
 			{
 				vcount++;
-				i = 1;
-				const char* linec = line.data();
-				for (int k = 0; k < 3; k++) { // k is 0,1,2 for x,y,z
-					while (linec[i] == ' ') i++;
-					j = i;
-					while (linec[j] != ' ') j++;
-					currCood = vlist[vcount][k] = atof(line.substr(i, j - i).c_str());
+
+				fread((char*)&x, 1, 4, fp);
+				vlist[vcount][0] = x;
+
+				fread((char*)&y, 1, 4, fp);
+				vlist[vcount][1] = y;
+
+				fread((char*)&z, 1, 4, fp);
+				vlist[vcount][2] = z;
+
+				/*cout << "Reading triangle " << i << " x y z "
+					<< vlist[vcount][0] << " " << vlist[vcount][1] << " " << vlist[vcount][2] << endl;*/
+
+				for (int k = 0; k < 3; k++) {
 					if (firstVertex)
-						lmin[k] = lmax[k] = currCood;
-					else {
-						if (lmin[k] > currCood)
-							lmin[k] = currCood;
-						if (lmax[k] < currCood)
-							lmax[k] = currCood;
+					{
+						lmin[k] = lmax[k] = vlist[vcount][k];
 					}
-					i = j;
+					else
+					{
+						if (lmin[k] > vlist[vcount][k])
+							lmin[k] = vlist[vcount][k];
+						if (lmax[k] < vlist[vcount][k])
+							lmax[k] = vlist[vcount][k];
+					}
 				}
 
 				firstVertex = 0;
 			}
+		}
+		else if (id == 0x4120) // face list
+		{
+			unsigned short numPoly = 0;
+			fread((char*)&numPoly, 1, 2, fp);
 
-			if (line[0] == 'f')
+			unsigned short v1Num, v2Num, v3Num;
+
+			for (int i = 0; i < numPoly; i++)
 			{
 				tcount++;
-				i = 1;
-				const char* linec = line.data();
-				for (int k = 0; k < 3; k++) {
-					while (linec[i] == ' ') i++;
-					j = i;
-					while (linec[j] != ' ' && linec[j] != '\\') j++;
-					tlist[tcount][k] = atof(line.substr(i, j - i).c_str());
-					i = j;
-					fnlist[tcount][k] = 0;
-					while (linec[j] != ' ') j++;
-				}
+
+				// cout << "Face number " << tcount << endl;
+
+				fread((char*)&v1Num, 1, 2, fp);
+				tlist[tcount][0] = ((int)v1Num) + 1; // + 1 as 3ds vertices are 0 indexed, cast to int first in case of short overflow
+
+				fread((char*)&v2Num, 1, 2, fp);
+				tlist[tcount][1] = ((int)v2Num) + 1;
+
+				fread((char*)&v3Num, 1, 2, fp);
+				tlist[tcount][2] = ((int)v3Num) + 1;
+
+				fseek(fp, 2, SEEK_CUR);
+
+				// lab 2 vertex normal calculation optional task
+				vToTList[tlist[tcount][0]].push_back(tcount);
+				vToTList[tlist[tcount][1]].push_back(tcount);
+				vToTList[tlist[tcount][2]].push_back(tcount);
 			}
+
+			break;
+		}
+		else
+		{
+			long seekAmt = len - 6;
+			cout << seekAmt << " ftell: " << ftell(fp) << endl;
+			fseek(fp, seekAmt, SEEK_CUR);
 		}
 	}
 
-	// Task 1 Normal Computation
-	computeNormals();
-	// Task 1 End
+	fclose(fp);
 
-	cout << "No. of vertices: " << vcount << endl;
-	cout << "No. of triangles: " << tcount << endl;
-	computeStat();
+	postReadFile();
 }
 
-void myObjType::readFile(char* filename)
+void myObjType::readObjFile(char* filename)
 {
 	cout << "Opening " << filename << endl;
 	ifstream inFile;
@@ -210,7 +307,6 @@ void myObjType::readFile(char* filename)
 	string line;
 	int i, j;
 	bool firstVertex = 1;
-	double currCood;
 
 	while (getline(inFile, line))
 	{
@@ -225,14 +321,14 @@ void myObjType::readFile(char* filename)
 					while (linec[i] == ' ') i++;
 					j = i;
 					while (linec[j] != ' ') j++;
-					currCood = vlist[vcount][k] = atof(line.substr(i, j - i).c_str());
+					vlist[vcount][k] = atof(line.substr(i, j - i).c_str());
 					if (firstVertex) 
-						lmin[k] = lmax[k] = currCood;
+						lmin[k] = lmax[k] = vlist[vcount][k];
 					else {
-						if (lmin[k] > currCood)
-							lmin[k] = currCood;
-						if (lmax[k] < currCood)
-							lmax[k] = currCood;
+						if (lmin[k] > vlist[vcount][k])
+							lmin[k] = vlist[vcount][k];
+						if (lmax[k] < vlist[vcount][k])
+							lmax[k] = vlist[vcount][k];
 					}
 					i = j;
 				}
@@ -254,7 +350,6 @@ void myObjType::readFile(char* filename)
 					vToTList[tlist[tcount][k]].push_back(tcount); // lab 2 vertex normal calculation optional task
 					i = j;
 					fnlist[tcount][k] = 0;
-					// while (linec[j] != ' ') j++;
 				}
 
 				// Support quadrilaterals
@@ -280,8 +375,11 @@ void myObjType::readFile(char* filename)
 		}
 	}
 
-	// We suggest you to compute the normals here
+	postReadFile();
+}
 
+void myObjType::postReadFile()
+{
 	// Lab 2 fnext task
 	computeFnlist();
 
@@ -298,9 +396,9 @@ void myObjType::readFile(char* filename)
 	// Lab 2 Optional Task - Vertex Normal calculation
 	computeVertexNormals();
 
-    cout << "No. of vertices: " << vcount << endl;
-    cout << "No. of triangles: " << tcount << endl;
-    computeStat();
+	cout << "No. of vertices: " << vcount << endl;
+	cout << "No. of triangles: " << tcount << endl;
+	computeStat();
 }
 
 // Lab 1 Task 1 Normal Computation
