@@ -1,5 +1,14 @@
 #pragma once
 
+#ifdef _WIN32
+#include <Windows.h>
+#include "GL\glut.h"
+#define M_PI 3.141592654
+#elif __APPLE__
+#include <OpenGL/gl.h>
+#include <GLUT/GLUT.h>
+#endif
+
 #include "math.h"
 #include <string>
 #include <unordered_map>
@@ -7,6 +16,7 @@
 #include <stdio.h>
 #include <fstream>
 #include <iostream>
+#include <bitset>
 #include <vector>
 #include <list>
 #include <map>
@@ -49,6 +59,10 @@ class myObjType {
 	int fnlist[MAXT][3];     // fnext list
 	double nlist[MAXT][3];   // storing triangle normals
 	
+	// Lab 2 user selection task
+	bitset<MAXT + 1> selectedT;
+	bitset<MAXT + 1> visibleT; // for isSelectingFacing mode (ctrl-alt click drag)
+
 	double lmax[3];          // the maximum coordinates of x,y,z
 	double lmin[3];          // the minimum coordinates of x,y,z
 
@@ -65,8 +79,10 @@ public:
 	};
 	void readFile(char* filename);  // assumming file contains a manifold
 	void writeFile(char* filename);  
-	void draw();  
+	void draw();
+	void drawOffscreen(); // lab 2 optional task- for ctrl-alt click drag mode
     void computeStat();
+	void computeSelectedTriangles();
 	inline int org(OrTri t);
 	inline int dest(OrTri t);
 	inline OrTri fnext(OrTri t);

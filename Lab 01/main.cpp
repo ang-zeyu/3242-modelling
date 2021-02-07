@@ -19,7 +19,7 @@ using namespace std;
 
 
 //#define M_PI 3.141592654
-#define WINDOW_LENGTH_WIDTH 600.0
+#define DEFAULT_WINDOW_LENGTH_WIDTH 600.0
 
 myObjType myObj;
 
@@ -36,7 +36,12 @@ int moving, startx, starty;
 
 // For lab 2 optional task - user select marquee
 int currX, currY;
+double selectBoxCoords[6];
+float projectionMatrix[16];
 bool isSelecting = false;
+bool isSelectingFacing = false;
+bool triggerOffscreenDraw = false;
+bool isDeselecting = false;
 
 float mat_diffuse[] = { 0.1f, 0.5f, 0.8f, 1.0f };
 
@@ -92,18 +97,26 @@ void display(void)
 	glPushMatrix();
 		gluLookAt(0, 0, 10, 0, 0, 0, 0, 1, 0);
 
-		// Lab 2 Optional task - user select marquee
+		// Lab 2 Optional task - draw user select marquee, store projection matrix
 		if (isSelecting)
 		{
-			double nearPlaneLength = tan(20.0 / 180.0 * M_PI) * 5 * 2;
+			glGetFloatv(GL_PROJECTION_MATRIX, projectionMatrix);
 			glPushMatrix();
-			glColor4d(0, 30, 200, 0.3);
-			glTranslated(0, 0, 5.0);
-			glRectd(
-				(startx - WINDOW_LENGTH_WIDTH / 2.0) / WINDOW_LENGTH_WIDTH * nearPlaneLength,
-				((WINDOW_LENGTH_WIDTH - starty) - WINDOW_LENGTH_WIDTH / 2.0) / WINDOW_LENGTH_WIDTH * nearPlaneLength,
-				(currX - WINDOW_LENGTH_WIDTH / 2.0) / WINDOW_LENGTH_WIDTH * nearPlaneLength,
-				((WINDOW_LENGTH_WIDTH - currY) - WINDOW_LENGTH_WIDTH / 2.0) / WINDOW_LENGTH_WIDTH * nearPlaneLength);
+				if (isDeselecting)
+					glColor4d(200, 30, 0, 0.3);
+				else
+					glColor4d(0, 30, 200, 0.3);
+				glTranslated(0, 0, 5.0);
+				int windowWidth = glutGet(GLUT_WINDOW_WIDTH);
+				int windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
+				double nearPlaneLength = tan(20.0 / 180.0 * M_PI) * 5 * 2;
+				selectBoxCoords[0] = (startx - windowWidth / 2.0) / windowWidth * nearPlaneLength;
+				selectBoxCoords[1] = ((windowHeight - starty) - windowHeight / 2.0) / windowHeight * nearPlaneLength;
+				selectBoxCoords[2] = -5;
+				selectBoxCoords[3] = (currX - windowWidth / 2.0) / windowWidth * nearPlaneLength;
+				selectBoxCoords[4] = ((windowHeight - currY) - windowHeight / 2.0) / windowHeight * nearPlaneLength;
+				selectBoxCoords[5] = -5;
+				glRectdv(selectBoxCoords, selectBoxCoords + 3);
 			glPopMatrix();
 		}
 
@@ -112,8 +125,21 @@ void display(void)
 		glScalef(zoom, zoom, zoom);
 
 		myObj.draw();
+		glutSwapBuffers(); // moved up here for lab 2 selection marquee optional task
+
+		// Lab 2 user marquee selection task
+		// Render to a offscreen buffer with unique colours for all polygons
+		// For finding 'visible' polygons
+		if (triggerOffscreenDraw)
+		{
+			myObj.drawOffscreen();
+			myObj.computeSelectedTriangles();
+			triggerOffscreenDraw = false;
+			isDeselecting = false;
+			isSelectingFacing = false;
+			glutPostRedisplay();
+		}
 	glPopMatrix();
-	glutSwapBuffers ();
 }
 
 
@@ -146,9 +172,9 @@ void keyboard (unsigned char key, int x, int y)
 		m_Highlight = !m_Highlight;
 		break;
 	// Optional task 4
-	case 't':
-	case 'T':
-		cout << "Enter the filename you want to read:";
+	case 'r':
+	case 'R':
+		cout << "Enter the 3ds or obj filename you want to read:";
 		cin >> filename;
 		myObj.readFile(filename);
 		break;
@@ -177,17 +203,20 @@ void keyboard (unsigned char key, int x, int y)
 	glutPostRedisplay();
 }
 
-
 void mouse(int button, int state, int x, int y)
 {
-	// Slightly modified for lab 2 optional task - user select marquee
 	if (state == GLUT_DOWN)
 	{
 		mouseButton = button;
 
-		if (glutGetModifiers() == GLUT_ACTIVE_CTRL)
+		// Lab 2 Optional task - user select marquee
+		if ((glutGetModifiers() & GLUT_ACTIVE_CTRL) != 0)
 		{
 			isSelecting = true;
+			if ((glutGetModifiers() & GLUT_ACTIVE_SHIFT) != 0)
+				isDeselecting = true;
+			if ((glutGetModifiers() & GLUT_ACTIVE_ALT) != 0)
+				isSelectingFacing = true;
 		}
 		else
 		{
@@ -197,19 +226,38 @@ void mouse(int button, int state, int x, int y)
 		startx = x;
 		starty = y;
     }
-	else if (state == GLUT_UP)
+	
+	// Lab 2 Optional task - user select marquee
+	if (isSelecting)
+	{
+		currX = x;
+		currY = y;
+	}
+	
+	if (state == GLUT_UP)
 	{
 		mouseButton = button;
 		moving = 0;
-		isSelecting = false;
+
+		// Lab 2 Optional task - user select marquee
+		if (isSelecting)
+		{
+			// If using ctrl-alt click drag mode, delay computation to display callback,
+			// where a offscreen draw is triggered to populate triangles with unique colours
+			// (determine which primitives are on screen)
+			triggerOffscreenDraw = isSelectingFacing;
+			if (!triggerOffscreenDraw)
+			{
+				myObj.computeSelectedTriangles();
+				isDeselecting = false;
+				isSelectingFacing = false;
+			}
+			isSelecting = false;
+		}
     }
 
-	// Lab 2 Optional task - user select marquee
-	currX = x;
-	currY = y;
-
 	glutPostRedisplay();
-	cout << "Mouse action detected - x y: " << x << " " << y << endl;
+	// cout << "Mouse action detected - x y: " << x << " " << y << endl;
 }
 
 void motion(int x, int y)
@@ -242,15 +290,14 @@ void motion(int x, int y)
 int main(int argc, char **argv)
 {
 	char filename[255];
-	cout<<"CS3242 "<< endl<< endl;
+	cout<< "CS3242" << endl << endl;
 
-
-
-	cout << "Enter the filename you want to open:";
+	cout << "Enter the 3ds or obj filename you want to open:";
 	cin >> filename;
 	myObj.readFile(filename);
 
-	//cout << "1-4: Draw different objects"<<endl;
+	//cout << "1-4: Draw different objects" << endl;
+	cout << "R: Read another file (3ds or obj)" << endl; // Lab 1 optional task - 3ds
 	cout << "O: Save object to file" << endl;
 	cout << "S: Toggle Smooth Shading"<<endl;
 	cout << "H: Toggle Highlight"<<endl;
@@ -260,13 +307,15 @@ int main(int argc, char **argv)
 	cout << "Q: Quit" <<endl<< endl;
 
 	cout << "Left mouse click and drag: rotate the object"<<endl;
+	cout << "Left mouse ctrl-click and drag: selection box" << endl; // Lab 2 optional task - user selection
+	cout << "Left mouse ctrl-shift-click and drag: deselection box" << endl; // Lab 2 optional task - user selection
 	cout << "Right mouse click and drag: zooming"<<endl;
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-	glutInitWindowSize (WINDOW_LENGTH_WIDTH, WINDOW_LENGTH_WIDTH);
+	glutInitWindowSize (DEFAULT_WINDOW_LENGTH_WIDTH, DEFAULT_WINDOW_LENGTH_WIDTH);
 	glutInitWindowPosition (50, 50);
-	glutCreateWindow ("CS3241 Assignment 3");
+	glutCreateWindow ("CS3242 Assignment");
 	glClearColor (1.0,1.0,1.0, 1.0);
 	glutDisplayFunc(display);
 	glutMouseFunc(mouse);
@@ -276,6 +325,8 @@ int main(int argc, char **argv)
 	glDisable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST); 
 	glDepthMask(GL_TRUE);
+
+	glEnable(GL_POLYGON_OFFSET_FILL); // lab 2 visualize boundary edges task
 
     glMatrixMode(GL_PROJECTION);
     gluPerspective( /* field of view in degree */ 40.0,

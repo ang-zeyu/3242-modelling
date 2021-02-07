@@ -28,16 +28,21 @@ using namespace std;
 extern float mat_diffuse[];
 float rmat_diffuse[] = { 1, 0, 0, 1.0f }; // Lab 2 boundary edge visualisation optional task
 
-extern int startx, starty, currX, currY;
-extern bool isSelecting;
+// Lab 2 user marquee selection task
+extern float projectionMatrix[];
+float modelViewMatrix[16]; // store opengl's mv matrix at time of selection
+float cyanmat_diffuse[] = { 0, 1, 1, 1.0f }; // selected triangles highlight
+extern double selectBoxCoords[];
+extern bool isSelecting, isDeselecting;
+// for isSelectingFacing mode (ctrl-alt click drag)
+extern bool isSelectingFacing, m_Smooth;
+
 
 void myObjType::draw() {
 
 	glEnable(GL_LIGHTING);
 
 	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
-
-	glPushMatrix();
 
 	double longestSide = 0.0;
 	for (int i = 0; i < 3; i++)
@@ -47,11 +52,25 @@ void myObjType::draw() {
 	glScalef(scaleFactor, scaleFactor, scaleFactor);
 	glTranslated(-(lmin[0] + lmax[0]) / 2.0, -(lmin[1] + lmax[1]) / 2.0, -(lmin[2] + lmax[2]) / 2.0);
 
+	// Lab 2 user marquee selection task
+	// Store mv matrix at this point (after glScalef, glTranslated, ...) for getting transformed vertex pos later
+	if (isSelecting)
+	{
+		glGetFloatv(GL_MODELVIEW_MATRIX, modelViewMatrix);
+	}
+
+	// Normal render run
 	for (int i = 1; i <= tcount; i++)
 	{
 		glBegin(GL_POLYGON);
-// uncomment the following after you computed the normals - done
+
+		// uncomment the following after you computed the normals - done
+		// recommented for lab 2 vertex normals optional task (moved to below glNormal3dv)
 		// glNormal3dv(nlist[i]);    
+
+		// Lab 2 user marquee selection task - highlight triangle
+		if (selectedT.test(i))
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, cyanmat_diffuse);
 
 		for (int j = 0; j < 3; j++)
 		{
@@ -69,11 +88,15 @@ void myObjType::draw() {
 
 			glVertex3dv(vlist[tlist[i][j]]);
 		}
+
+		// Lab 2 user marquee selection task - highlight triangle
+		if (selectedT.test(i))
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
 			
 		glEnd();
 
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, rmat_diffuse);
-		glPolygonOffset(1000, 1000);
+		glPolygonOffset(10000, 10000);
 		glLineWidth(3);
 		for (int j = 0; j < 3; j++)
 		{
@@ -81,10 +104,8 @@ void myObjType::draw() {
 			if (fnlist[i][j] == makeOrTri(i, j))
 			{
 				glBegin(GL_LINES);
-
-				glVertex3dv(vlist[tlist[i][j]]);
-				glVertex3dv(vlist[tlist[i][(j + 1) % 3]]);
-
+					glVertex3dv(vlist[tlist[i][j]]);
+					glVertex3dv(vlist[tlist[i][(j + 1) % 3]]);
 				glEnd();
 			}
 		}
@@ -92,9 +113,285 @@ void myObjType::draw() {
 		glPolygonOffset(0, 0);
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
 	}
-	glDisable(GL_LIGHTING);
 
-	glPopMatrix();
+	glDisable(GL_LIGHTING);
+}
+
+void myObjType::drawOffscreen()
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glShadeModel(GL_FLAT);
+
+	unsigned int r = 1; // start from 1, as background is black
+	unsigned int g = 0;
+	unsigned int b = 0;
+
+	unordered_map<unsigned int, int> colourTriangleMap;
+
+	for (int i = 1; i <= tcount; i++)
+	{
+		glColor3ub((byte)r, (byte)g, (byte)b);
+		colourTriangleMap.insert({
+			((r << 24) | (g << 16) | (b << 8)) & 0xFFFFFF00, // ensure last 8 bits are 0
+			i
+			});
+
+		glBegin(GL_POLYGON);
+
+		for (int j = 0; j < 3; j++)
+		{
+			glVertex3dv(vlist[tlist[i][j]]);
+		}
+
+		glEnd();
+
+		b += 1;
+		if (b == 256)
+		{
+			if (g == 255)
+			{
+				r += 1;
+				g = 0;
+				b = 0;
+			}
+			else
+			{
+				g += 1;
+				b = 0;
+			}
+		}
+	}
+
+	glReadBuffer(GL_BACK);
+
+	int width = glutGet(GLUT_WINDOW_WIDTH);
+	int height = glutGet(GLUT_WINDOW_HEIGHT);
+	unsigned int size = width * height * 3;
+
+	byte* readColours = (byte*)malloc(sizeof(byte) * size);
+	glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, readColours);
+
+	visibleT.reset();
+	for (int i = 0; i < size; i += 3)
+	{
+		unsigned int fullColour = ((readColours[i] << 24) | (readColours[i + 1] << 16) | (readColours[i + 2] << 8)) & 0xFFFFFF00;
+		if (colourTriangleMap.find(fullColour) != colourTriangleMap.end())
+		{
+			visibleT.set(colourTriangleMap.at(fullColour));
+		}
+	}
+
+	free(readColours);
+
+	if (m_Smooth)
+		glShadeModel(GL_SMOOTH);
+}
+
+void multMatrix(float transformMatrix[16], double v[3], double vTransformed[3])
+{
+	double homogenousFactor = transformMatrix[3] * v[0]
+		+ transformMatrix[7] * v[1]
+		+ transformMatrix[11] * v[2]
+		+ transformMatrix[15] * 1;
+
+	vTransformed[0] = (transformMatrix[0] * v[0]
+		+ transformMatrix[4] * v[1]
+		+ transformMatrix[8] * v[2]
+		+ transformMatrix[12] * 1) / homogenousFactor; // 1 because vlist is in non-homogenous coordinates
+
+	vTransformed[1] = (transformMatrix[1] * v[0]
+		+ transformMatrix[5] * v[1]
+		+ transformMatrix[9] * v[2]
+		+ transformMatrix[13] * 1) / homogenousFactor;
+
+	// Can disregard z coordinate as object is rotated, not the camera
+	vTransformed[2] = (transformMatrix[2] * v[0]
+		+ transformMatrix[6] * v[1]
+		+ transformMatrix[10] * v[2]
+		+ transformMatrix[14] * 1) / homogenousFactor;
+}
+
+// Lab 2 Optional task - user select marquee
+void myObjType::computeSelectedTriangles()
+{
+	/*cout << "Select box coords x1 y1 x2 y2: " 
+		<< selectBoxCoords[0] << " "
+		<< selectBoxCoords[1] << " "
+		<< selectBoxCoords[3] << " "
+		<< selectBoxCoords[4] << " " << endl;*/
+
+	double selectBoxTopleft[3];
+	double selectBoxBottomRight[3];
+	multMatrix(projectionMatrix, selectBoxCoords, selectBoxTopleft);
+	multMatrix(projectionMatrix, selectBoxCoords + 3, selectBoxBottomRight);
+
+	/*cout << "Select box coords x1 y1 x2 y2 new: "
+		<< selectBoxTopleft[0] << " "
+		<< selectBoxTopleft[1] << " "
+		<< selectBoxBottomRight[0] << " "
+		<< selectBoxBottomRight[1] << " " << endl;*/
+
+	// Update bitset
+	for (int i = 1; i <= tcount; i++)
+	{
+		if (isSelectingFacing && !visibleT.test(i)) // "alt" mode
+		{
+			continue;
+		}
+
+		double vTransformed[3][3];
+
+		// Transform each triangle's vertices using opengl's model view matrix.
+		for (int j = 0; j < 3; j++)
+		{
+			double vTransformedTemp[3];
+			multMatrix(modelViewMatrix, vlist[tlist[i][j]], vTransformedTemp);
+			multMatrix(projectionMatrix, vTransformedTemp, vTransformed[j]);
+
+			// cout << j << ": " << vTransformed[j][0] << " " << vTransformed[j][1] << " " << vTransformed[j][2] << endl;
+		}
+
+		// Then perform cohen-sutherland intersection (simplified as no need to clip)
+		// with the selection box **for each edge** in the triangle.
+		// If any edge tests true, the triangle should be selected
+		for (int j = 0; j < 3; j++)
+		{
+			double v1[2];
+			v1[0] = vTransformed[j][0];
+			v1[1] = vTransformed[j][1];
+			double v2[2];
+			v2[0] = vTransformed[(j + 1) % 3][0];
+			v2[1] = vTransformed[(j + 1) % 3][1];
+
+		restart: // cohen sutherland repeat point for case 4 - reset outcodes but keep shortened line
+			unsigned int v1Outcode = 0;
+			unsigned int v2Outcode = 0;
+
+			// v1
+			if (v1[1] > selectBoxTopleft[1])
+				v1Outcode |= 0b00001000; // b0
+			else if (v1[1] < selectBoxBottomRight[1])
+				v1Outcode |= 0b00000100; // b1
+
+			if (v1[0] > selectBoxBottomRight[0])
+				v1Outcode |= 0b00000010; // b2
+			else if (v1[0] < selectBoxTopleft[0])
+				v1Outcode |= 0b00000001; // b3
+
+			// v2
+			if (v2[1] > selectBoxTopleft[1])
+				v2Outcode |= 0b00001000; // b0
+			else if (v2[1] < selectBoxBottomRight[1])
+				v2Outcode |= 0b00000100; // b1
+
+			if (v2[0] > selectBoxBottomRight[0])
+				v2Outcode |= 0b00000010; // b2
+			else if (v2[0] < selectBoxTopleft[0])
+				v2Outcode |= 0b00000001; // b3
+
+			if (v1Outcode == 0 && v2Outcode == 0)
+			{
+				// cout << "Both zero " << v1[0] << " " << v1[1] << " " << (int)v1Outcode << " " << v2[0] << " " << v2[1] << endl;
+
+				// line within - accept
+				selectedT.set(i, !isDeselecting);
+				break;
+			}
+
+			if ((v1Outcode & v2Outcode) != 0)
+			{
+				// both lines outside on the same side - reject, continue checking other edges
+				// cout << "Both on same side" << endl;
+				continue;
+			}
+
+			if ((v1Outcode == 0 && v2Outcode != 0) || (v1Outcode != 0 && v2Outcode == 0))
+			{
+				// cout << "One zero " << v1[0] << " " << v1[1] << " " << v2[0] << " " << v2[1] << endl;
+
+				// one inside, one outside - normally intersection needs to be calculated here
+				// but we are not doing clipping - accept
+				selectedT.set(i, !isDeselecting);
+				break;
+			}
+
+			// Last case - still tricky - neither 0, but bitwise AND yields 0
+			// Try shortening v2 into the window by intersecting with one side
+
+			double v1MinusV2[2]; // delta
+			v1MinusV2[0] = v1[0] - v2[0];
+			v1MinusV2[1] = v1[1] - v2[1];
+
+			/*cout << "Cohen sutherland last case " << j << " v2Outcode: " << v2Outcode
+				<< " v2: " << v2[0] << " " << v2[1] << " "
+				<< " v1: " << v1[0] << " " << v1[1] << " "
+				<< " v1MinusV2: " << v1MinusV2[0] << " " << v1MinusV2[1] << endl;*/
+
+			if ((v2Outcode & 0b00001000) != 0) // top
+			{
+				v2[0] += (v2[1] - selectBoxTopleft[1]) * v1MinusV2[0] / abs(v1MinusV2[1]);
+				v2[1] = selectBoxTopleft[1];
+			}
+			else if ((v2Outcode & 0b00000100) != 0) // down
+			{
+				v2[0] += (selectBoxBottomRight[1] - v2[1]) * v1MinusV2[0] / abs(v1MinusV2[1]);
+				v2[1] = selectBoxBottomRight[1];
+			}
+			else if ((v2Outcode & 0b00000010) != 0) // right
+			{
+				v2[1] += (v2[0] - selectBoxBottomRight[0]) * v1MinusV2[1] / abs(v1MinusV2[0]);
+				v2[0] = selectBoxBottomRight[0];
+			}
+			else if ((v2Outcode & 0b00000001) != 0) // left
+			{
+				v2[1] += (selectBoxTopleft[0] - v2[0]) * v1MinusV2[1] / abs(v1MinusV2[0]);
+				v2[0] = selectBoxTopleft[0];
+			}
+
+			// cout << "                           new " << v2[0] << " " << v2[1] << endl;
+
+			goto restart; // rerun outcode check
+		}
+
+		// Last edge case check cohen sutherland cannot find
+		// Selection box is entirely within the polygon
+		// Logic referenced from
+		// https://math.stackexchange.com/questions/51326/determining-if-an-arbitrary-point-lies-inside-a-triangle-defined-by-three-points
+		// Test the first point of the selection box
+		if (isDeselecting ? selectedT.test(i) : !selectedT.test(i))
+		{
+			double AB[2];
+			AB[0] = vTransformed[1][0] - vTransformed[0][0];
+			AB[1] = vTransformed[1][1] - vTransformed[0][1];
+			double BC[2];
+			BC[0] = vTransformed[2][0] - vTransformed[1][0];
+			BC[1] = vTransformed[2][1] - vTransformed[1][1];
+			double CA[2];
+			CA[0] = vTransformed[0][0] - vTransformed[2][0];
+			CA[1] = vTransformed[0][1] - vTransformed[2][1];
+
+			double AP[2];
+			AP[0] = selectBoxTopleft[0] - vTransformed[0][0];
+			AP[1] = selectBoxTopleft[1] - vTransformed[0][1];
+			double BP[2];
+			BP[0] = selectBoxTopleft[0] - vTransformed[1][0];
+			BP[1] = selectBoxTopleft[1] - vTransformed[1][1];
+			double CP[2];
+			CP[0] = selectBoxTopleft[0] - vTransformed[2][0];
+			CP[1] = selectBoxTopleft[1] - vTransformed[2][1];
+
+			// Just get third term as z position does not matter after projection for checking this
+			double ABAP = AB[0] * AP[1] - AP[0] * AB[1];
+			double BABP = BC[0] * BP[1] - BP[0] * BC[1];
+			double CACP = CA[0] * CP[1] - CP[0] * CA[1];
+
+			if ((ABAP >= 0 && BABP >= 0 && CACP >= 0)
+				|| (ABAP < 0 && BABP < 0 && CACP < 0))
+			{
+				selectedT.set(i, !isDeselecting);
+			}
+		}
+	}
 }
 
 void myObjType::writeFile(char* filename)
@@ -154,6 +451,8 @@ void myObjType::reset()
 
 	tcount = vcount = 0;
 	numCc = 0;
+	selectedT.reset();
+	visibleT.reset();
 }
 
 void myObjType::read3dsFile(char* filename)
@@ -175,13 +474,11 @@ void myObjType::read3dsFile(char* filename)
 		fread((char*)&id, 1, 2, fp);
 		fread((char*)&len, 1, 4, fp);
 
-		cout << "id " << id << " len " << len << endl;
-
 		if (id == 0x4D4D // main chunk
 			|| id == 0x3D3D // 3d editor chunk
 			|| id == 0x4100) // triangle mesh
 		{
-			cout << "Entering chunk " << id << endl;
+			// cout << "Entering chunk " << id << endl;
 			continue;
 		}
 		else if (id == 0x4000)
@@ -201,7 +498,7 @@ void myObjType::read3dsFile(char* filename)
 				}
 			}
 
-			cout << "Object chunk name was n characters long: " << endIdx << " ftell " << ftell(fp) - 64 << endl;
+			// cout << "Object chunk name was n characters long: " << endIdx << " ftell " << ftell(fp) - 64 << endl;
 
 			fseek(fp, endIdx - 64, SEEK_CUR);
 		}
@@ -283,8 +580,10 @@ void myObjType::read3dsFile(char* filename)
 		}
 		else
 		{
+			// cout << "skipping id " << id << " len " << len << endl;
+
 			long seekAmt = len - 6;
-			cout << seekAmt << " ftell: " << ftell(fp) << endl;
+			// cout << seekAmt << " ftell: " << ftell(fp) << endl;
 			fseek(fp, seekAmt, SEEK_CUR);
 		}
 	}
