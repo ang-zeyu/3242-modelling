@@ -1,5 +1,3 @@
-#include "mesh.h"
-
 #ifdef _WIN32
 #include <Windows.h>
 #include "GL\glut.h"

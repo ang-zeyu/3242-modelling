@@ -1,6 +1,5 @@
 #include "mesh.h"
 
-#include "utils.cpp";
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -1107,22 +1106,6 @@ inline void average(double result[3], double v1[3], double v2[3])
 	result[2] = (v1[2] + v2[2]) / 2;
 }
 
-int myObjType::addOrGetMidpoint(
-	unordered_map<pair<int, int>, int, pairHash> edgeVertexMap,
-	pair<int, int> edge, int v1, int v2)
-{
-	if (edgeVertexMap.find(edge) == edgeVertexMap.end())
-	{
-		vcount++;
-		average(vlist[vcount], vlist[v1], vlist[v2]);
-
-		return vcount;
-	}
-	else
-	{
-		return edgeVertexMap.at(edge);
-	}
-}
 
 void myObjType::subdivide()
 {
@@ -1132,69 +1115,108 @@ void myObjType::subdivide()
 	 */
 	unordered_map<pair<int, int>, int, pairHash> edgeVertexMap;
 
-	for (int t = 1; t <= tcount; t++)
+	int originalTCount = tcount; // fix iteration to original triangles
+	for (int t = 1; t <= originalTCount; t++)
 	{
 		if (!selectedT.test(t))
 		{
 			continue;
 		}
 
-		int* vertices = tlist[t];
+		pair<int, int> edges[3];
+		edges[0] = make_pair(min(tlist[t][0], tlist[t][1]), max(tlist[t][0], tlist[t][1]));
+		edges[1] = make_pair(min(tlist[t][1], tlist[t][2]), max(tlist[t][1], tlist[t][2]));
+		edges[2] = make_pair(min(tlist[t][0], tlist[t][2]), max(tlist[t][0], tlist[t][2]));
 
-		pair<int, int> v1v2 = make_pair(
-			min(vertices[0], vertices[1]),
-			max(vertices[0], vertices[1]));
-		pair<int, int> v1v3 = make_pair(
-			min(vertices[0], vertices[2]),
-			max(vertices[0], vertices[2]));
-		pair<int, int> v2v3 = make_pair(
-			min(vertices[1], vertices[2]),
-			max(vertices[1], vertices[2]));
-
+		// Add new midpoint vertices as necessary
 		int newMidpointVertices[3];
-		newMidpointVertices[0] = addOrGetMidpoint(edgeVertexMap, v1v2, vertices[0], vertices[1]);
-		newMidpointVertices[2] = addOrGetMidpoint(edgeVertexMap, v1v3, vertices[0], vertices[2]);
-		newMidpointVertices[1] = addOrGetMidpoint(edgeVertexMap, v2v3, vertices[1], vertices[2]);
+		for (int i = 0; i < 3; i++)
+		{
+			pair<int, int> edge = edges[i];
+			if (edgeVertexMap.find(edge) == edgeVertexMap.end())
+			{
+				vcount++;
+				average(vlist[vcount], vlist[tlist[t][i]], vlist[tlist[t][(i + 1) % 3]]);
+				edgeVertexMap.insert({ edge, vcount });
+				newMidpointVertices[i] = vcount;
+			}
+			else
+			{
+				newMidpointVertices[i] = edgeVertexMap.at(edge);
+			}
+		}
 
 		// Construct 3 more subdivided triangles
 		for (int i = 0; i < 3; i++)
 		{
 			tcount++;
 
-			tlist[tcount][0] = newMidpointVertices[i];
-			tlist[tcount][1] = vertices[(i + 1) % 3];
-			tlist[tcount][2] = newMidpointVertices[(i + 1) % 3];
+			tlist[tcount][0] = tlist[t][i];
+			tlist[tcount][1] = newMidpointVertices[i];
+			tlist[tcount][2] = newMidpointVertices[(i + 2) % 3];
+
+			nlist[tcount][0] = nlist[t][0];
+			nlist[tcount][1] = nlist[t][1];
+			nlist[tcount][2] = nlist[t][2];
+
+			for (int j = 0; j < 3; j++)
+				vToTList[tlist[tcount][j]].push_back(tcount);
+
+			selectedT.set(tcount, true);
 		}
 
 		// Readjust current triangle to be central triangle
-		vertices[0] = newMidpointVertices[0];
-		vertices[1] = newMidpointVertices[1];
-		vertices[2] = newMidpointVertices[2];
-
-		// If it is a boundary edge (on selected portion), also need to partially subdivide the adjacent triangle
 		for (int i = 0; i < 3; i++)
 		{
-			OrTri adjacentTriangle = fnext(makeOrTri(t, i)); // triangle adjacent to version i of current triangle
+			vToTList[tlist[t][i]].remove(t);                    // remove old v -> t mapping
+			vToTList[newMidpointVertices[i]].push_back(tcount); // new v -> t mapping
+		}
+
+		tlist[t][0] = newMidpointVertices[0];
+		tlist[t][1] = newMidpointVertices[1];
+		tlist[t][2] = newMidpointVertices[2];
+
+		// For each version of current triangle
+		// If it is a boundary edge (on selected portion), 
+		// also need to partially subdivide the adjacent triangle
+		for (int v = 0; v < 3; v++)
+		{
+			OrTri adjacentTriangle = fnext(makeOrTri(t, v)); // triangle adjacent to version i of current triangle
+			int adjacentTriangleVer = ver(adjacentTriangle) % 3; // normalized version
 			int adjacentTriangleIdx =  idx(adjacentTriangle);
+
 			bool isBoundary = !selectedT.test(adjacentTriangleIdx);
 			if (isBoundary)
 			{
 				tcount++;
 
-				// Readjust tlist
-				tlist[tcount][0] = newMidpointVertices[i];
-				tlist[tcount][1] = tlist[adjacentTriangleIdx][1];
-				tlist[tcount][2] = tlist[adjacentTriangleIdx][2];
-				tlist[adjacentTriangleIdx][1] = newMidpointVertices[i];
+				// New tlist
+				tlist[tcount][0] = tlist[adjacentTriangleIdx][(adjacentTriangleVer + 1) % 3];
+				tlist[tcount][1] = tlist[adjacentTriangleIdx][(adjacentTriangleVer + 2) % 3];
+				tlist[tcount][2] = newMidpointVertices[v];
 
-				// update vToTList
-				vToTList[newMidpointVertices[i]].push_back(adjacentTriangleIdx);
-				vToTList[newMidpointVertices[i]].push_back(tcount);
+				nlist[tcount][0] = nlist[adjacentTriangleIdx][0];
+				nlist[tcount][1] = nlist[adjacentTriangleIdx][1];
+				nlist[tcount][2] = nlist[adjacentTriangleIdx][2];
 
-				// Re adjust fnlist
+				// Add vToTList mapping
+				for (int j = 0; j < 3; j++)
+					vToTList[tlist[tcount][j]].push_back(tcount);
+
+				// Update old adjacent triangle
+				// Update vToTList mapping
+				vToTList[newMidpointVertices[v]].push_back(adjacentTriangleIdx);     // new v -> t mapping
+				vToTList[tlist[adjacentTriangleIdx][(adjacentTriangleVer + 1) % 3]]
+					.remove(adjacentTriangleIdx); // remove old mapping
+
+				// Update tlist - just middle vertex
+				tlist[adjacentTriangleIdx][(adjacentTriangleVer + 1) % 3] = newMidpointVertices[v];
 			}
 		}
 	}
+
+	computeFnlist();
+	computeVertexNormals();
 }
 
 void myObjType::computeStat()
