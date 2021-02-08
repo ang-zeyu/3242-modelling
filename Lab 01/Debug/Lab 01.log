@@ -1,10 +1,11 @@
 ﻿  mesh.cpp
-c:\users\angze\desktop\3242-modelling\lab 01\mesh.h(12): warning C4067: unexpected tokens following preprocessor directive - expected a newline
-c:\users\angze\desktop\3242-modelling\lab 01\mesh.cpp(51): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-c:\users\angze\desktop\3242-modelling\lab 01\mesh.cpp(174): warning C4018: '<': signed/unsigned mismatch
-c:\users\angze\desktop\3242-modelling\lab 01\mesh.cpp(646): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-c:\users\angze\desktop\3242-modelling\lab 01\mesh.cpp(656): warning C4018: '<': signed/unsigned mismatch
-c:\users\angze\desktop\3242-modelling\lab 01\mesh.cpp(665): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-c:\users\angze\desktop\3242-modelling\lab 01\mesh.cpp(1252): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-c:\users\angze\desktop\3242-modelling\lab 01\mesh.cpp(1253): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-  Lab 01.vcxproj -> C:\Users\angze\Desktop\3242-modelling\Debug\Lab 01.exe
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.h(12): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(52): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(185): warning C4018: '<': signed/unsigned mismatch
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(657): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(667): warning C4018: '<': signed/unsigned mismatch
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(676): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(1421): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(1422): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(1398): warning C4172: returning address of local variable or temporary: angles
+  Lab 01.vcxproj -> C:\Users\ZeYu\Desktop\3242-modelling\Debug\Lab 01.exe

@@ -30,7 +30,8 @@ float rmat_diffuse[] = { 1, 0, 0, 1.0f }; // Lab 2 boundary edge visualisation o
 // Lab 2 user marquee selection task
 extern float projectionMatrix[];
 float modelViewMatrix[16]; // store opengl's mv matrix at time of selection
-float cyanmat_diffuse[] = { 0, 1, 1, 1.0f }; // selected triangles highlight
+float cyanmat_diffuse[] = { 0, 1, 1, 1.0f };   // selected triangles highlight
+float greenmat_diffuse[] = { 0, 1, 0.5, 1.0f }; // selected triangles border highlight
 extern double selectBoxCoords[];
 extern bool isSelecting, isDeselecting;
 // for isSelectingFacing mode (ctrl-alt click drag)
@@ -88,7 +89,7 @@ void myObjType::draw() {
 			glVertex3dv(vlist[tlist[i][j]]);
 		}
 
-		// Lab 2 user marquee selection task - highlight triangle
+		// Lab 2 user marquee selection task - highlight triangle - reset colour
 		if (selectedT.test(i))
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
 			
@@ -106,6 +107,16 @@ void myObjType::draw() {
 					glVertex3dv(vlist[tlist[i][j]]);
 					glVertex3dv(vlist[tlist[i][(j + 1) % 3]]);
 				glEnd();
+			}
+			// Lab 2 user marquee selection task - highlight triangle border colour
+			else if (selectedT.test(i))
+			{
+				glMaterialfv(GL_FRONT, GL_DIFFUSE, greenmat_diffuse);
+				glBegin(GL_LINES);
+					glVertex3dv(vlist[tlist[i][j]]);
+					glVertex3dv(vlist[tlist[i][(j + 1) % 3]]);
+				glEnd();
+				glMaterialfv(GL_FRONT, GL_DIFFUSE, rmat_diffuse);
 			}
 		}
 		glLineWidth(1);
@@ -865,13 +876,13 @@ void myObjType::computeFnlist()
 {
 	// Build edge triangle map
 	unordered_map<pair<int, int>, OrTri*, pairHash> edgeTriangleMap;
-	for (int i = 1; i <= tcount; i++)
+	for (int t = 1; t <= tcount; t++)
 	{
 		for (int v = 0; v < 6; v++)
 		{
 			pair<int, int> currentEdge = v < 3
-				? make_pair(tlist[i][v], tlist[i][(v + 1) % 3])
-				: make_pair(tlist[i][(v + 1) % 3], tlist[i][v % 3]);
+				? make_pair(tlist[t][v], tlist[t][(v + 1) % 3])
+				: make_pair(tlist[t][(v + 1) % 3], tlist[t][v % 3]);
 
 			if (edgeTriangleMap.find(currentEdge) == edgeTriangleMap.end())
 			{
@@ -881,17 +892,17 @@ void myObjType::computeFnlist()
 			}
 
 			OrTri* orTriPair = edgeTriangleMap.at(currentEdge);
-			orTriPair[orTriPair[0] == 0 ? 0 : 1] = makeOrTri(i, v);
+			orTriPair[orTriPair[0] == 0 ? 0 : 1] = makeOrTri(t, v);
 		}
 	}
 
 	// Build fnlist...
-	for (int i = 1; i <= tcount; i++)
+	for (int t = 1; t <= tcount; t++)
 	{
 		// 012, 120, 201
 		for (int v = 0; v < 3; v++)
 		{
-			pair<int, int> currentEdge = make_pair(tlist[i][v], tlist[i][(v + 1) % 3]);
+			pair<int, int> currentEdge = make_pair(tlist[t][v], tlist[t][(v + 1) % 3]);
 
 			if (edgeTriangleMap.find(currentEdge) == edgeTriangleMap.end())
 			{
@@ -899,18 +910,18 @@ void myObjType::computeFnlist()
 			}
 
 			OrTri* orTriPair = edgeTriangleMap.at(currentEdge);
-			OrTri current = makeOrTri(i, v);
+			OrTri current = makeOrTri(t, v);
 			if (orTriPair[0] != 0 && orTriPair[0] != current)
 			{
-				fnlist[i][v] = orTriPair[0];
+				fnlist[t][v] = orTriPair[0];
 			}
 			else if (orTriPair[1] != 0 && orTriPair[1] != current)
 			{
-				fnlist[i][v] = orTriPair[1];
+				fnlist[t][v] = orTriPair[1];
 			}
 			else // back to itself
 			{
-				fnlist[i][v] = makeOrTri(i, v);
+				fnlist[t][v] = makeOrTri(t, v);
 			}
 		}
 	}
@@ -1219,6 +1230,174 @@ void myObjType::subdivide()
 	computeVertexNormals();
 }
 
+void myObjType::relax()
+{
+	// in any run, modified triangles shall not be checked for relaxation again
+	// unordered_set<int> modifiedTriangles;
+
+	unordered_set<int> triangleVertices;
+	unordered_set<int> triangleVerticesBlacklist;
+	for (int t = 1; t <= tcount; t++)
+	{
+		if (!selectedT.test(t))
+		{
+			continue;
+		}
+
+		bool isBoundaryEdge[3];
+		for (int i = 0; i < 3; i++)
+			isBoundaryEdge[i] = fnlist[t][i] == makeOrTri(t, i);
+
+		for (int i = 0; i < 3; i++)
+		{
+			// boundary vertices should not be processed
+			if (isBoundaryEdge[i] || isBoundaryEdge[(i + 2) % 3])
+			{
+				triangleVerticesBlacklist.insert(tlist[t][i]);
+				continue;
+			}
+
+			triangleVertices.insert(tlist[t][i]);
+		}
+		
+		/*double* currentTriangleAngles = computeAngles(vlist[tlist[t][0]], vlist[tlist[t][1]], vlist[tlist[t][2]]);
+		double currTriMinAngle = min(currentTriangleAngles[0], min(currentTriangleAngles[1], currentTriangleAngles[2]));
+		double currTriMaxAngle = max(currentTriangleAngles[0], max(currentTriangleAngles[1], currentTriangleAngles[2]));
+
+		for (int v = 0; v < 3; v++)
+		{
+			OrTri adjacentTriangle = fnlist[t][v];
+			if (adjacentTriangle == makeOrTri(t, v))
+			{
+				continue; // boundary edge
+			}
+
+			int adjacentTriangleIdx = idx(adjacentTriangle);
+			int adjacentTriangleVer = ver(adjacentTriangle) % 3; // normalized to 0 - 3, for finding the non-shared vertex 
+			double* adjacentTriangleAngles = computeAngles(
+				vlist[tlist[adjacentTriangleIdx][0]],
+				vlist[tlist[adjacentTriangleIdx][1]],
+				vlist[tlist[adjacentTriangleIdx][2]]);
+			double minAngle = min(currTriMinAngle, min(adjacentTriangleAngles[0], min(adjacentTriangleAngles[1], adjacentTriangleAngles[2])));
+			double maxAngle = max(currTriMaxAngle, max(adjacentTriangleAngles[0], max(adjacentTriangleAngles[1], adjacentTriangleAngles[2])));
+
+			double* newTriangleAngles1 = computeAngles(
+				vlist[tlist[t][(v + 1) % 3]],
+				vlist[tlist[t][(v + 2) % 3]],
+				vlist[tlist[adjacentTriangleIdx][(adjacentTriangleVer + 2) % 3]]);
+			double* newTriangleAngles2 = computeAngles(
+				vlist[tlist[t][v]],
+				vlist[tlist[t][(v + 2) % 3]],
+				vlist[tlist[adjacentTriangleIdx][(adjacentTriangleVer + 2) % 3]]);
+
+			double newMinAngle = min(
+				newTriangleAngles1[0],
+				min(newTriangleAngles1[1],
+					min(newTriangleAngles1[2],
+						min(newTriangleAngles2[0],
+							min(newTriangleAngles2[1],
+								newTriangleAngles2[2])
+						)))
+			);
+
+			if (newMinAngle <= minAngle)
+			{
+				continue;
+			}
+		}*/
+	}
+
+	// Post remove blacklisted vertices as it may be blacklisted after it was processed
+	unordered_set<int>::iterator blacklistIt = triangleVerticesBlacklist.begin();
+	for (; blacklistIt != triangleVerticesBlacklist.end(); blacklistIt++)
+	{
+		if (triangleVertices.find(*blacklistIt) != triangleVertices.end())
+		{
+			triangleVertices.erase(*blacklistIt);
+		}
+	}
+
+	// Laplacian smoothing
+
+	// delay updates so all calculations are based on current state only
+	unordered_map<int, double*> vertexUpdates;
+
+	unordered_set<int>::iterator selectedVerticesIt = triangleVertices.begin();
+	for (; selectedVerticesIt != triangleVertices.end(); selectedVerticesIt++)
+	{
+		int v = *selectedVerticesIt;
+
+		unordered_set<int> vertexNeighbours;
+
+		// Find neighbours
+		list<int> vertexTriangles = vToTList[v];
+		list<int>::iterator vertexTrianglesIt = vertexTriangles.begin();
+		for (;  vertexTrianglesIt != vertexTriangles.end(); vertexTrianglesIt++)
+		{
+			for (int i = 0; i < 3; i++)
+				vertexNeighbours.insert(tlist[*vertexTrianglesIt][i]);
+			
+		}
+		vertexNeighbours.erase(v);
+
+		// Sum then average
+		double sum[3]; sum[0] = 0; sum[1] = 0; sum[2] = 0;
+		unordered_set<int>::iterator neighboursIt = vertexNeighbours.begin();
+		for (; neighboursIt != vertexNeighbours.end(); neighboursIt++)
+		{
+			for (int i = 0; i < 3; i++)
+				sum[i] += vlist[*neighboursIt][i];
+		}
+		for (int i = 0; i < 3; i++)
+			sum[i] /= vertexNeighbours.size();
+
+		// Calculate new vertices
+		double* update = (double*)malloc(sizeof(double) * 3);
+		for (int i = 0; i < 3; i++)
+		{
+			update[i] = vlist[v][i] + 0.1 * (sum[i] - vlist[v][i]);
+			// cout << vlist[v][i] << " " << update[i] << endl;
+		}
+
+		vertexUpdates.insert({ v, update });
+	}
+
+	// Update vertices to new positions
+	unordered_map<int, double*>::iterator updatesIt = vertexUpdates.begin();
+	for (; updatesIt != vertexUpdates.end(); updatesIt++)
+	{
+		for (int i = 0; i < 3; i++)
+		{
+			vlist[updatesIt->first][i] = updatesIt->second[i];
+			// cout << vlist[(*updatesIt).first][i] << " " << (*updatesIt).second[i] << endl;
+		}
+		free(updatesIt->second);
+	}
+
+	computeNormals();
+	computeVertexNormals();
+
+	cout << "Relaxed selected portion of mesh" << endl;
+}
+
+inline double* computeAngles(double* v1, double* v2, double* v3)
+{
+	double v1ToV2Len = sqrt(abs(pow(v2[0] - v1[0], 2) + pow(v2[1] - v1[1], 2) + pow(v2[2] - v1[2], 2)));
+	double v1ToV3Len = sqrt(abs(pow(v3[0] - v1[0], 2) + pow(v3[1] - v1[1], 2) + pow(v3[2] - v1[2], 2)));
+	double v2ToV3Len = sqrt(abs(pow(v3[0] - v2[0], 2) + pow(v3[1] - v2[1], 2) + pow(v3[2] - v2[2], 2)));
+
+	// cosine rule
+	double angles[3];
+	angles[0] = acos(
+		(pow(v1ToV2Len, 2) + pow(v1ToV3Len, 2) - pow(v2ToV3Len, 2)) / (2 * v1ToV2Len * v1ToV3Len));
+	angles[1] = acos(
+		(pow(v1ToV2Len, 2) + pow(v2ToV3Len, 2) - pow(v1ToV3Len, 2)) / (2 * v1ToV2Len * v2ToV3Len));
+	angles[2] = acos(
+		(pow(v2ToV3Len, 2) + pow(v1ToV3Len, 2) - pow(v1ToV2Len, 2)) / (2 * v2ToV3Len * v1ToV3Len));
+
+	return angles;
+}
+
 void myObjType::computeStat()
 {
 	int i;
@@ -1233,20 +1412,10 @@ void myObjType::computeStat()
 		double* v2 = vlist[t[1]];
 		double* v3 = vlist[t[2]];
 
-		double v1ToV2Len = sqrt(abs(pow(v2[0] - v1[0], 2) + pow(v2[1] - v1[1], 2) + pow(v2[2] - v1[2], 2)));
-		double v1ToV3Len = sqrt(abs(pow(v3[0] - v1[0], 2) + pow(v3[1] - v1[1], 2) + pow(v3[2] - v1[2], 2)));
-		double v2ToV3Len = sqrt(abs(pow(v3[0] - v2[0], 2) + pow(v3[1] - v2[1], 2) + pow(v3[2] - v2[2], 2)));
+		double* angles = computeAngles(v1, v2, v3);
 
-		// cosine rule
-		double v1Angle = acos(
-			(pow(v1ToV2Len, 2) + pow(v1ToV3Len, 2) - pow(v2ToV3Len, 2)) / (2 * v1ToV2Len * v1ToV3Len));
-		double v2Angle = acos(
-			(pow(v1ToV2Len, 2) + pow(v2ToV3Len, 2) - pow(v1ToV3Len, 2)) / (2 * v1ToV2Len * v2ToV3Len));
-		double v3Angle = acos(
-			(pow(v2ToV3Len, 2) + pow(v1ToV3Len, 2) - pow(v1ToV2Len, 2)) / (2 * v2ToV3Len * v1ToV3Len));
-
-		double currTriMinAngle = min(v1Angle, min(v2Angle, v3Angle)) * 180.0 / M_PI;
-		double currTriMaxAngle = max(v1Angle, max(v2Angle, v3Angle)) * 180.0 / M_PI;
+		double currTriMinAngle = min(angles[0], min(angles[1], angles[2])) * 180.0 / M_PI;
+		double currTriMaxAngle = max(angles[0], max(angles[1], angles[2])) * 180.0 / M_PI;
 		// printf("%f %f %f %f %f\n", v1ToV2Len, v1ToV3Len, v2ToV3Len, min(v1Angle, min(v2Angle, v3Angle)), max(v1Angle, max(v2Angle, v3Angle)));
 
 		int minBucketIdx = currTriMinAngle / 10;

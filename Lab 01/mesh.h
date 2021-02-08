@@ -83,12 +83,15 @@ public:
 	void writeFile(char* filename);  
 	void draw();
 	void drawOffscreen(); // lab 2 optional task- for ctrl-alt click drag mode
-	void subdivide(); // final boss
     void computeStat();
 	void computeSelectedTriangles();
 	inline int org(OrTri t);
 	inline int dest(OrTri t);
 	inline OrTri fnext(OrTri t);
+
+	// Final boss(es)
+	void subdivide();
+	void relax();
 
 private:
 	void reset();

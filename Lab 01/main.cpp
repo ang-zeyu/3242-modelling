@@ -189,6 +189,10 @@ void keyboard (unsigned char key, int x, int y)
 	case 'B':
 		myObj.subdivide();
 		break;
+	case 'e':
+	case 'E':
+		myObj.relax();
+		break;
 	case 't':
 	case 'T':
 		break;
@@ -329,6 +333,7 @@ int main(int argc, char **argv)
 	// Final boss
 	cout << "D: Decimate / simplify selected portion of mesh" << endl;
 	cout << "B: Barycentric subdivide selected portion of mesh" << endl;
+	cout << "E: Edge swapping to relax mesh" << endl;
 	cout << "T: Thicken selected portion of mesh" << endl;
 
 	glutInit(&argc, argv);
