@@ -176,13 +176,24 @@ void keyboard (unsigned char key, int x, int y)
 	case 'R':
 		cout << "Enter the 3ds or obj filename you want to read:";
 		cin >> filename;
-		myObj.readFile(filename);
+		myObj.readFile(filename); // Lab 1 optional task
 		break;
 	case 'o':
 	case 'O':
 		cout << "Enter the filename you want to write:";
 		cin >> filename;
 		myObj.writeFile(filename);
+		break;
+	// Final boss
+	case 'b':
+	case 'B':
+		myObj.subdivide();
+		break;
+	case 't':
+	case 'T':
+		break;
+	case 'd':
+	case 'D':
 		break;
 	case '1':
 	case '2':
@@ -307,9 +318,18 @@ int main(int argc, char **argv)
 	cout << "Q: Quit" <<endl<< endl;
 
 	cout << "Left mouse click and drag: rotate the object"<<endl;
-	cout << "Left mouse ctrl-click and drag: selection box" << endl; // Lab 2 optional task - user selection
-	cout << "Left mouse ctrl-shift-click and drag: deselection box" << endl; // Lab 2 optional task - user selection
-	cout << "Right mouse click and drag: zooming"<<endl;
+	cout << "Right mouse click and drag: zooming" << endl;
+
+	// Lab 2 optional task - user selection
+	cout << endl << "Triangle selection:" << endl;
+	cout << "Left mouse ctrl-click and drag: selection box" << endl; 
+	cout << "Left mouse ctrl-shift-click and drag: deselection box" << endl;
+	cout << "Combine the above two with \"alt\" to select / deselect only visible triangles" << endl;
+
+	// Final boss
+	cout << "D: Decimate / simplify selected portion of mesh" << endl;
+	cout << "B: Barycentric subdivide selected portion of mesh" << endl;
+	cout << "T: Thicken selected portion of mesh" << endl;
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);

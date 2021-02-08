@@ -441,7 +441,7 @@ void myObjType::readFile(char* filename)
 
 void myObjType::reset()
 {
-	for (int i = 0; i < vcount; i++)
+	for (int i = 0; i <= vcount; i++)
 		vToTList[i] = list<int>();
 	for (int i = 0; i < 18; i++)
 	{
@@ -752,10 +752,6 @@ void myObjType::computeVertexNormals()
 	// Algo: When reading file, construct vertex -> triangle inverse mapping
 	// Read list of triangles for each vertex, compute vertex normal
 
-	unordered_set<int> unprocessedTriangles;
-	for (int i = 1; i <= tcount; i++)
-		unprocessedTriangles.insert(i);
-
 	for (int i = 1; i <= vcount; i++)
 	{
 		vnlist[i][0] = 0;
@@ -776,6 +772,10 @@ void myObjType::computeVertexNormals()
 	 - BFS, treating each triangle like a graph node in bfs
 	 - For each triangle's vertices, fan the vertex, getting the normals of its triangles
 	 - Average it
+	
+	unordered_set<int> unprocessedTriangles;
+	for (int i = 1; i <= tcount; i++)
+		unprocessedTriangles.insert(i);
 
 	while (!unprocessedTriangles.empty())
 	{
@@ -1100,10 +1100,107 @@ end:
 	return successful;
 }
 
+inline void average(double result[3], double v1[3], double v2[3])
+{
+	result[0] = (v1[0] + v2[0]) / 2;
+	result[1] = (v1[1] + v2[1]) / 2;
+	result[2] = (v1[2] + v2[2]) / 2;
+}
+
+int myObjType::addOrGetMidpoint(
+	unordered_map<pair<int, int>, int, pairHash> edgeVertexMap,
+	pair<int, int> edge, int v1, int v2)
+{
+	if (edgeVertexMap.find(edge) == edgeVertexMap.end())
+	{
+		vcount++;
+		average(vlist[vcount], vlist[v1], vlist[v2]);
+
+		return vcount;
+	}
+	else
+	{
+		return edgeVertexMap.at(edge);
+	}
+}
+
+void myObjType::subdivide()
+{
+	/*
+	 During subdivision, new vertices may be shared by multiple original triangles
+	 Avoid constructing redundant vertices
+	 */
+	unordered_map<pair<int, int>, int, pairHash> edgeVertexMap;
+
+	for (int t = 1; t <= tcount; t++)
+	{
+		if (!selectedT.test(t))
+		{
+			continue;
+		}
+
+		int* vertices = tlist[t];
+
+		pair<int, int> v1v2 = make_pair(
+			min(vertices[0], vertices[1]),
+			max(vertices[0], vertices[1]));
+		pair<int, int> v1v3 = make_pair(
+			min(vertices[0], vertices[2]),
+			max(vertices[0], vertices[2]));
+		pair<int, int> v2v3 = make_pair(
+			min(vertices[1], vertices[2]),
+			max(vertices[1], vertices[2]));
+
+		int newMidpointVertices[3];
+		newMidpointVertices[0] = addOrGetMidpoint(edgeVertexMap, v1v2, vertices[0], vertices[1]);
+		newMidpointVertices[2] = addOrGetMidpoint(edgeVertexMap, v1v3, vertices[0], vertices[2]);
+		newMidpointVertices[1] = addOrGetMidpoint(edgeVertexMap, v2v3, vertices[1], vertices[2]);
+
+		// Construct 3 more subdivided triangles
+		for (int i = 0; i < 3; i++)
+		{
+			tcount++;
+
+			tlist[tcount][0] = newMidpointVertices[i];
+			tlist[tcount][1] = vertices[(i + 1) % 3];
+			tlist[tcount][2] = newMidpointVertices[(i + 1) % 3];
+		}
+
+		// Readjust current triangle to be central triangle
+		vertices[0] = newMidpointVertices[0];
+		vertices[1] = newMidpointVertices[1];
+		vertices[2] = newMidpointVertices[2];
+
+		// If it is a boundary edge (on selected portion), also need to partially subdivide the adjacent triangle
+		for (int i = 0; i < 3; i++)
+		{
+			OrTri adjacentTriangle = fnext(makeOrTri(t, i)); // triangle adjacent to version i of current triangle
+			int adjacentTriangleIdx =  idx(adjacentTriangle);
+			bool isBoundary = !selectedT.test(adjacentTriangleIdx);
+			if (isBoundary)
+			{
+				tcount++;
+
+				// Readjust tlist
+				tlist[tcount][0] = newMidpointVertices[i];
+				tlist[tcount][1] = tlist[adjacentTriangleIdx][1];
+				tlist[tcount][2] = tlist[adjacentTriangleIdx][2];
+				tlist[adjacentTriangleIdx][1] = newMidpointVertices[i];
+
+				// update vToTList
+				vToTList[newMidpointVertices[i]].push_back(adjacentTriangleIdx);
+				vToTList[newMidpointVertices[i]].push_back(tcount);
+
+				// Re adjust fnlist
+			}
+		}
+	}
+}
+
 void myObjType::computeStat()
 {
 	int i;
-    double minAngle = 0;
+    double minAngle = 181;
     double maxAngle = 0;
 
 	// Lab 1 Task 2 start

@@ -9,6 +9,8 @@
 #include <GLUT/GLUT.h>
 #endif
 
+#include "utils.cpp";
+
 #include "math.h"
 #include <string>
 #include <unordered_map>
@@ -81,6 +83,7 @@ public:
 	void writeFile(char* filename);  
 	void draw();
 	void drawOffscreen(); // lab 2 optional task- for ctrl-alt click drag mode
+	void subdivide();
     void computeStat();
 	void computeSelectedTriangles();
 	inline int org(OrTri t);
@@ -98,6 +101,11 @@ private:
 	void computeFnlist();
 	void computeNumCc();
 	bool orientTriangles();
+
+	// Final boss
+	int addOrGetMidpoint(
+		unordered_map<pair<int, int>, int, pairHash> edgeVertexMap,
+		pair<int, int> edge, int v1, int v2);
 };
 
 
