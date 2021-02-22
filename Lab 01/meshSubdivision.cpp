@@ -236,66 +236,6 @@ void myObjType::relax()
 		}
 	}
 
-	// Laplacian smoothing
-
-	// delay updates so all calculations are based on current state only
-	unordered_map<int, double*> vertexUpdates;
-
-	unordered_set<int>::iterator selectedVerticesIt = triangleVertices.begin();
-	for (; selectedVerticesIt != triangleVertices.end(); selectedVerticesIt++)
-	{
-		int v = *selectedVerticesIt;
-
-		unordered_set<int> vertexNeighbours;
-
-		// Find neighbours
-		list<int> vertexTriangles = vToTList[v];
-		list<int>::iterator vertexTrianglesIt = vertexTriangles.begin();
-		for (; vertexTrianglesIt != vertexTriangles.end(); vertexTrianglesIt++)
-		{
-			for (int i = 0; i < 3; i++)
-				vertexNeighbours.insert(tlist[*vertexTrianglesIt][i]);
-
-		}
-		vertexNeighbours.erase(v);
-
-		// Sum then average
-		double sum[3]; sum[0] = 0; sum[1] = 0; sum[2] = 0;
-		unordered_set<int>::iterator neighboursIt = vertexNeighbours.begin();
-		for (; neighboursIt != vertexNeighbours.end(); neighboursIt++)
-		{
-			for (int i = 0; i < 3; i++)
-				sum[i] += vlist[*neighboursIt][i];
-		}
-		for (int i = 0; i < 3; i++)
-			sum[i] /= vertexNeighbours.size();
-
-		// Calculate new vertices
-		double* update = (double*)malloc(sizeof(double) * 3);
-		for (int i = 0; i < 3; i++)
-		{
-			update[i] = vlist[v][i] + 0.1 * (sum[i] - vlist[v][i]);
-			// cout << vlist[v][i] << " " << update[i] << endl;
-		}
-
-		vertexUpdates.insert({ v, update });
-	}
-
-	// Update vertices to new positions
-	unordered_map<int, double*>::iterator updatesIt = vertexUpdates.begin();
-	for (; updatesIt != vertexUpdates.end(); updatesIt++)
-	{
-		for (int i = 0; i < 3; i++)
-		{
-			vlist[updatesIt->first][i] = updatesIt->second[i];
-			// cout << vlist[(*updatesIt).first][i] << " " << (*updatesIt).second[i] << endl;
-		}
-		free(updatesIt->second);
-	}
-
-	computeNormals();
-	computeVertexNormals();
-
 	cout << "Relaxed selected portion of mesh" << endl;
 }
 

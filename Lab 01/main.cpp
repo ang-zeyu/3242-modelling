@@ -204,6 +204,7 @@ void keyboard (unsigned char key, int x, int y)
 		break;
 	case 't':
 	case 'T':
+		myObj.smooth();
 		break;
 	case 'd':
 	case 'D':
@@ -407,6 +408,7 @@ int main(int argc, char **argv)
 	cout << "B: Barycentric subdivide selected portion of mesh" << endl;
 	cout << "E: Edge swapping to relax mesh" << endl;
 
+	cout << "T: Smooth mesh with laplacian smoothing" << endl;
 	cout << "Alt (without ctrl) click drag to select a vertex for laplacian deformation," << endl
 		<< "  with some selected triangles first (see above instructions)" << endl;
 	cout << "Use left (-x) right(+x) up(+y) down(-y) pgup(+z) pgdown(-z) keys to laplacian-deform" << endl;

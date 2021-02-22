@@ -78,7 +78,6 @@ void myObjType::computeSelectedVertex()
 
 	if (numSelectedT != currentMax)
 	{
-		selectedV = 0;
 		cout << "Selected too many triangles! Select only a single vertex for a more accurate selection." << endl;
 	}
 }

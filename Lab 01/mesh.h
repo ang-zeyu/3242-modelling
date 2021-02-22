@@ -141,6 +141,7 @@ public:
 	void relax();
 	void decimate();
 
+	void smooth();
 	void displace(double* displacement); // laplacian deformation
 
 private:

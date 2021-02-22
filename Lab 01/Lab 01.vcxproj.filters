@@ -33,6 +33,9 @@
     <ClCompile Include="laplacianDeformation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="laplacianSmoothing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
