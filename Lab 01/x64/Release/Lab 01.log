@@ -1,26 +1,7 @@
-﻿  laplacianDeformation.cpp
-c:\users\zeyu\desktop\3242-modelling\lab 01\laplaciandeformation.cpp(28): warning C4067: unexpected tokens following preprocessor directive - expected a newline
-c:\users\zeyu\desktop\3242-modelling\lab 01\laplaciandeformation.cpp(153): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-c:\users\zeyu\desktop\3242-modelling\lab 01\laplaciandeformation.cpp(196): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-c:\users\zeyu\desktop\3242-modelling\lab 01\laplaciandeformation.cpp(277): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-  laplacianSmoothing.cpp
-  main.cpp
-c:\users\zeyu\desktop\3242-modelling\lab 01\main.cpp(359): warning C4244: '+=': conversion from 'double' to 'GLfloat', possible loss of data
-c:\users\zeyu\desktop\3242-modelling\lab 01\main.cpp(419): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
-  mesh.cpp
-c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(56): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(212): warning C4018: '<': signed/unsigned mismatch
-c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(493): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(710): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(729): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(1190): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(1191): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-  meshDecimation.cpp
-c:\users\zeyu\desktop\3242-modelling\lab 01\meshdecimation.cpp(491): warning C4267: '-=': conversion from 'size_t' to 'int', possible loss of data
-  meshSubdivision.cpp
+﻿  meshSubdivision.cpp
   Generating code
-  224 of 4429 functions ( 5.1%) were compiled, the rest were copied from previous compilation.
-    1 functions were new in current compilation
-    26 functions had inline decision re-evaluated but remain unchanged
+  2 of 4446 functions (<0.1%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    3 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   Lab 01.vcxproj -> C:\Users\ZeYu\Desktop\3242-modelling\x64\Release\Lab 01.exe

@@ -43,6 +43,9 @@ bool isSelectingFacing = false;
 bool triggerOffscreenDraw = false;
 bool isDeselecting = false;
 
+// Final boss - relaxation
+int relaxationStepSize = 1;
+
 // Final boss - decimation
 int decimationStepSize = 1;
 
@@ -201,6 +204,16 @@ void keyboard (unsigned char key, int x, int y)
 	case 'e':
 	case 'E':
 		myObj.relax();
+		break;
+	case 'y':
+	case 'Y':
+		relaxationStepSize += 1;
+		cout << "Relaxation step size: " << relaxationStepSize << endl;
+		break;
+	case 'u':
+	case 'U':
+		relaxationStepSize -= 1;
+		cout << "Relaxation step size: " << relaxationStepSize << endl;
 		break;
 	case 't':
 	case 'T':
@@ -405,10 +418,13 @@ int main(int argc, char **argv)
 	cout << "F: Increase decimation count" << endl;
 	cout << "G: Decrease decimation count" << endl;
 
-	cout << "B: Barycentric subdivide selected portion of mesh" << endl;
-	cout << "E: Edge swapping to relax mesh" << endl;
+	cout << "B: Barycentric subdivide selected portion of mesh" << endl << endl;
 
-	cout << "T: Smooth mesh with laplacian smoothing" << endl;
+	cout << "E: Edge swapping to relax mesh" << endl;
+	cout << "Y: Increase relaxation step size" << endl;
+	cout << "U: Decrease relaxation step size" << endl << endl;
+
+	cout << "T: Smooth mesh with laplacian smoothing" << endl << endl;
 	cout << "Alt (without ctrl) click drag to select a vertex for laplacian deformation," << endl
 		<< "  with some selected triangles first (see above instructions)" << endl;
 	cout << "Use left (-x) right(+x) up(+y) down(-y) pgup(+z) pgdown(-z) keys to laplacian-deform" << endl;

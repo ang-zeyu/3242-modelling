@@ -25,6 +25,8 @@
 #include <iomanip>
 using namespace std;
 
+extern int relaxationStepSize;
+
 /*
  My functionalities concerning mesh subdivision and relaxation
  */
@@ -149,13 +151,24 @@ void myObjType::subdivide()
 	computeVertexNormals();
 }
 
+double relaxationMaxDeviation = 5.0 * M_PI / 180.0;
 void myObjType::relax()
 {
-	// in any run, modified triangles shall not be checked for relaxation again
-	// unordered_set<int> modifiedTriangles;
+	auto cmp = [this](const int& e1, const int& e2) // Comparator for edge's vertex degrees
+	{
+		int org1 = org(e1);
+		int dest1 = dest(e1);
 
-	unordered_set<int> triangleVertices;
-	unordered_set<int> triangleVerticesBlacklist;
+		int org2 = org(e2);
+		int dest2 = dest(e2);
+
+		return vToTList[org1].size() + vToTList[dest1].size() - vToTList[org2].size() - vToTList[dest2].size();
+	};
+
+	// Pick by shortest edge length
+	// Exclude boundary edges on selection
+	std::priority_queue<int, std::vector<int>, decltype(cmp)> edgeQueue(cmp);
+
 	for (int t = 1; t <= tcount; t++)
 	{
 		if (!selectedT.test(t))
@@ -163,79 +176,80 @@ void myObjType::relax()
 			continue;
 		}
 
-		bool isBoundaryEdge[3];
-		for (int i = 0; i < 3; i++)
-			isBoundaryEdge[i] = fnlist[t][i] == makeOrTri(t, i);
-
 		for (int i = 0; i < 3; i++)
 		{
-			// boundary vertices should not be processed
-			if (isBoundaryEdge[i] || isBoundaryEdge[(i + 2) % 3])
+			// Boundary edges on mesh should not be processed
+			// Also boundary edges on selected portion of mesh
+			OrTri tri = makeOrTri(t, i);
+			OrTri adjacentTri = fnext(tri);
+			int adjacentTriidx = idx(adjacentTri);
+			if (adjacentTriidx == t || !selectedT.test(adjacentTriidx))
 			{
-				triangleVerticesBlacklist.insert(tlist[t][i]);
 				continue;
 			}
 
-			triangleVertices.insert(tlist[t][i]);
+			edgeQueue.push(tri);
 		}
-
-		/*double* currentTriangleAngles = computeAngles(vlist[tlist[t][0]], vlist[tlist[t][1]], vlist[tlist[t][2]]);
-		double currTriMinAngle = min(currentTriangleAngles[0], min(currentTriangleAngles[1], currentTriangleAngles[2]));
-		double currTriMaxAngle = max(currentTriangleAngles[0], max(currentTriangleAngles[1], currentTriangleAngles[2]));
-
-		for (int v = 0; v < 3; v++)
-		{
-			OrTri adjacentTriangle = fnlist[t][v];
-			if (adjacentTriangle == makeOrTri(t, v))
-			{
-				continue; // boundary edge
-			}
-
-			int adjacentTriangleIdx = idx(adjacentTriangle);
-			int adjacentTriangleVer = ver(adjacentTriangle) % 3; // normalized to 0 - 3, for finding the non-shared vertex
-			double* adjacentTriangleAngles = computeAngles(
-				vlist[tlist[adjacentTriangleIdx][0]],
-				vlist[tlist[adjacentTriangleIdx][1]],
-				vlist[tlist[adjacentTriangleIdx][2]]);
-			double minAngle = min(currTriMinAngle, min(adjacentTriangleAngles[0], min(adjacentTriangleAngles[1], adjacentTriangleAngles[2])));
-			double maxAngle = max(currTriMaxAngle, max(adjacentTriangleAngles[0], max(adjacentTriangleAngles[1], adjacentTriangleAngles[2])));
-
-			double* newTriangleAngles1 = computeAngles(
-				vlist[tlist[t][(v + 1) % 3]],
-				vlist[tlist[t][(v + 2) % 3]],
-				vlist[tlist[adjacentTriangleIdx][(adjacentTriangleVer + 2) % 3]]);
-			double* newTriangleAngles2 = computeAngles(
-				vlist[tlist[t][v]],
-				vlist[tlist[t][(v + 2) % 3]],
-				vlist[tlist[adjacentTriangleIdx][(adjacentTriangleVer + 2) % 3]]);
-
-			double newMinAngle = min(
-				newTriangleAngles1[0],
-				min(newTriangleAngles1[1],
-					min(newTriangleAngles1[2],
-						min(newTriangleAngles2[0],
-							min(newTriangleAngles2[1],
-								newTriangleAngles2[2])
-						)))
-			);
-
-			if (newMinAngle <= minAngle)
-			{
-				continue;
-			}
-		}*/
 	}
 
-	// Post remove blacklisted vertices as it may be blacklisted after it was processed
-	unordered_set<int>::iterator blacklistIt = triangleVerticesBlacklist.begin();
-	for (; blacklistIt != triangleVerticesBlacklist.end(); blacklistIt++)
+	cout << edgeQueue.size() << endl;
+	// In any run, modified triangles shall not be checked for relaxation again
+	unordered_set<int> modifiedTriangles;
+
+	int numRelaxedEdges = 0;
+	while (!edgeQueue.empty() && numRelaxedEdges < relaxationStepSize)
 	{
-		if (triangleVertices.find(*blacklistIt) != triangleVertices.end())
+		OrTri edge = edgeQueue.top();
+		edgeQueue.pop();
+
+		int orgV = org(edge);
+		int destV = dest(edge);
+
+		int tri1 = idx(edge);
+		int ortri2 = fnext(edge);
+		int tri2 = idx(fnext(edge));
+
+		if (modifiedTriangles.find(tri1) != modifiedTriangles.end()
+			|| modifiedTriangles.find(tri2) != modifiedTriangles.end())
 		{
-			triangleVertices.erase(*blacklistIt);
+			continue;
+		}
+
+		double normal1[3];
+		computeNormalFor(tri1, normal1);
+		double normal2[3];
+		computeNormalFor(tri2, normal2);
+
+		// dot product formula to get angle
+		double angle = acos(dotProduct(normal1, normal2) / (mag(normal1) * mag(normal2)));
+		cout << dotProduct(normal1, normal2) << " " << mag(normal1) * mag(normal2) << " " <<  angle << " " << relaxationMaxDeviation << endl;
+		if (angle <= relaxationMaxDeviation)
+		{
+			// Swap edge
+			int ver1 = ver(edge);  // guaranteed to be ver 0 - 2, as pushed earlier into edgeQueue
+			int ver2 = ver(ortri2);
+
+			numRelaxedEdges += 1;
+
+			tlist[tri1][ver1] = tlist[tri2][(ver2 + 2) % 3];
+			tlist[tri2][ver2 < 3 ? ((ver2 + 1) % 3) : (ver2 % 3)] = tlist[tri1][(ver1 + 2) % 3];
+			modifiedTriangles.insert(tri1);
+			modifiedTriangles.insert(tri2);
 		}
 	}
 
-	cout << "Relaxed selected portion of mesh" << endl;
+	computeFnlist();
+	computeNormals();
+	computeVertexNormals();
+
+	if (numRelaxedEdges == relaxationStepSize)
+	{
+		cout << "Relaxed " << numRelaxedEdges << " edges!" << endl;
+	}
+	else
+	{
+		cout << "Relaxed " << numRelaxedEdges << " edges!" << endl;
+		cout << "No or not enough edges fufilled relaxation criteria." << endl;
+	}
 }
 
