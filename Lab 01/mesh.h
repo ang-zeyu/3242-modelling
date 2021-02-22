@@ -75,6 +75,9 @@ class myObjType {
 	bitset<MAXT + 1> selectedT;
 	bitset<MAXT + 1> visibleT; // for isSelectingFacing mode (ctrl-alt click drag)
 
+	// Laplacian deformation final boss
+	int selectedV = 0;
+
 	double lmax[3];          // the maximum coordinates of x,y,z
 	double lmin[3];          // the minimum coordinates of x,y,z
 
@@ -138,6 +141,8 @@ public:
 	void relax();
 	void decimate();
 
+	void displace(double* displacement); // laplacian deformation
+
 private:
 	void reset();
 	void readObjFile(char* filename);
@@ -157,7 +162,9 @@ private:
 	unordered_set<string> linkV(int v);
 	unordered_set<string> linkE(OrTri t);
 	bool contract(OrTri edge);
-	
+
+	// Laplacian deformation
+	void computeSelectedVertex();
 };
 
 

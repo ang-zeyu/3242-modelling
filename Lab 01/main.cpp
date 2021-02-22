@@ -43,6 +43,10 @@ bool isSelectingFacing = false;
 bool triggerOffscreenDraw = false;
 bool isDeselecting = false;
 
+// Final boss - laplacian deformation
+double laplacianDeformStepSize = 0.1;
+bool isSelectingVertex = false;
+
 float mat_diffuse[] = { 0.1f, 0.5f, 0.8f, 1.0f };
 
 #define NO_OBJECT 4;
@@ -102,7 +106,9 @@ void display(void)
 		{
 			glGetFloatv(GL_PROJECTION_MATRIX, projectionMatrix);
 			glPushMatrix();
-				if (isDeselecting)
+				if (isSelectingVertex)
+					glColor4d(0, 200, 0, 0.3);
+				else if (isDeselecting)
 					glColor4d(200, 30, 0, 0.3);
 				else
 					glColor4d(0, 30, 200, 0.3);
@@ -219,6 +225,49 @@ void keyboard (unsigned char key, int x, int y)
 	glutPostRedisplay();
 }
 
+void arrows(int key, int x, int y)
+{
+	double* displacement = (double*)malloc(sizeof(double) * 3);
+	displacement[0] = 0;
+	displacement[1] = 0;
+	displacement[2] = 0;
+
+	switch (key)
+	{
+	case GLUT_KEY_UP:
+		displacement[1] += laplacianDeformStepSize;
+		break;
+	case GLUT_KEY_DOWN:
+		displacement[1] -= laplacianDeformStepSize;
+		break;
+	case GLUT_KEY_LEFT:
+		displacement[0] -= laplacianDeformStepSize;
+		break;
+	case GLUT_KEY_RIGHT:
+		displacement[0] += laplacianDeformStepSize;
+		break;
+	case GLUT_KEY_PAGE_UP:
+		displacement[2] += laplacianDeformStepSize;
+		break;
+	case GLUT_KEY_PAGE_DOWN:
+		displacement[2] -= laplacianDeformStepSize;
+		break;
+	case GLUT_KEY_HOME:
+		laplacianDeformStepSize -= 0.1;
+		cout << "Laplacian deform step size: " << laplacianDeformStepSize << endl;
+		return;
+	case GLUT_KEY_END:
+		laplacianDeformStepSize += 0.1;
+		cout << "Laplacian deform step size: " << laplacianDeformStepSize << endl;
+		return;
+	default:
+		return;
+	}
+
+	myObj.displace(displacement);
+	glutPostRedisplay();
+}
+
 void mouse(int button, int state, int x, int y)
 {
 	if (state == GLUT_DOWN)
@@ -233,6 +282,12 @@ void mouse(int button, int state, int x, int y)
 				isDeselecting = true;
 			if ((glutGetModifiers() & GLUT_ACTIVE_ALT) != 0)
 				isSelectingFacing = true;
+		}
+		else if ((glutGetModifiers() & GLUT_ACTIVE_ALT) != 0)
+		{
+			isSelecting = true;
+			isSelectingVertex = true;
+			isSelectingFacing = true;
 		}
 		else
 		{
@@ -335,7 +390,11 @@ int main(int argc, char **argv)
 	cout << "D: Decimate / simplify selected portion of mesh" << endl;
 	cout << "B: Barycentric subdivide selected portion of mesh" << endl;
 	cout << "E: Edge swapping to relax mesh" << endl;
-	cout << "T: Thicken selected portion of mesh" << endl;
+
+	cout << "Alt (without ctrl) click drag to select a vertex for laplacian deformation," << endl
+		<< "  with some selected triangles first (see above instructions)" << endl;
+	cout << "Use left (-x) right(+x) up(+y) down(-y) pgup(+z) pgdown(-z) keys to laplacian-deform" << endl;
+	cout << "Use home (decrease) and end (increase) keys to increase / decrease laplacian deform step size" << endl;
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
@@ -347,6 +406,7 @@ int main(int argc, char **argv)
 	glutMouseFunc(mouse);
 	glutMotionFunc(motion);
 	glutKeyboardFunc(keyboard);
+	glutSpecialFunc(arrows); // laplacian deformation final boss
 	setupLighting();
 	glDisable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST); 

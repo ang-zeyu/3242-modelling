@@ -37,7 +37,10 @@ extern double selectBoxCoords[];
 extern bool isSelecting, isDeselecting;
 // for isSelectingFacing mode (ctrl-alt click drag)
 extern bool isSelectingFacing, m_Smooth;
+extern bool isSelectingVertex; // laplacian deformation final boss
 
+// final boss laplacian deformation surrounding triangles of selected vertex highlight
+float purple_diffuse[] = { 0.5, 0, 0.5, 1.0f };
 
 void myObjType::draw() {
 
@@ -60,6 +63,17 @@ void myObjType::draw() {
 		glGetFloatv(GL_MODELVIEW_MATRIX, modelViewMatrix);
 	}
 
+	// Final boss laplacian deformation
+	// For highlighting triangles surrounding the selected vertex
+	unordered_set<int> selectedVerticesSurroundingTriangles;
+	if (selectedV != 0)
+	{
+		for (int t : vToTList[selectedV])
+		{
+			selectedVerticesSurroundingTriangles.insert(t);
+		}
+	}
+
 	// Normal render run
 	for (int i = 1; i <= tcount; i++)
 	{
@@ -69,10 +83,7 @@ void myObjType::draw() {
 		// recommented for lab 2 vertex normals optional task (moved to below glNormal3dv)
 		// glNormal3dv(nlist[i]);    
 
-		// Lab 2 user marquee selection task - highlight triangle
-		if (selectedT.test(i))
-			glMaterialfv(GL_FRONT, GL_DIFFUSE, cyanmat_diffuse);
-
+		
 		if (!m_Smooth)
 			glNormal3dv(nlist[i]);
 
@@ -91,12 +102,23 @@ void myObjType::draw() {
 				glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
 			}*/
 
+			if (selectedV == tlist[i][j])
+			{
+				// Laplacian deformation final boss - highlight triangles surrounding selected vertex
+				glMaterialfv(GL_FRONT, GL_DIFFUSE, purple_diffuse);
+			}
+			else if (selectedT.test(i))
+			{
+				// Lab 2 user marquee selection task - highlight triangle
+				glMaterialfv(GL_FRONT, GL_DIFFUSE, cyanmat_diffuse);
+			}
+			else
+			{
+				glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+			}
+
 			glVertex3dv(vlist[tlist[i][j]]);
 		}
-
-		// Lab 2 user marquee selection task - highlight triangle - reset colour
-		if (selectedT.test(i))
-			glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
 			
 		glEnd();
 
@@ -245,6 +267,17 @@ void myObjType::computeSelectedTriangles()
 		<< selectBoxTopleft[1] << " "
 		<< selectBoxBottomRight[0] << " "
 		<< selectBoxBottomRight[1] << " " << endl;*/
+
+	bitset<MAXT + 1> selectedTBackup;
+	if (isSelectingVertex)
+	{
+		// for rolling back - in this alternate selection mode only vertex should be selected
+		for (int i = 1; i <= tcount; i++)
+		{
+			selectedTBackup.set(i, selectedT.test(i));
+			selectedT.set(i, false);
+		}
+	}
 
 	// Update bitset
 	for (int i = 1; i <= tcount; i++)
@@ -407,6 +440,20 @@ void myObjType::computeSelectedTriangles()
 			}
 		}
 	}
+
+	if (isSelectingVertex)
+	{
+		computeSelectedVertex();
+		isSelectingVertex = false;
+
+		// Roll back
+		for (int i = 1; i <= tcount; i++)
+			selectedT.set(i, selectedTBackup.test(i));
+	}
+	else
+	{
+		selectedV = 0;
+	}
 }
 
 void myObjType::writeFile(char* filename)
@@ -468,6 +515,7 @@ void myObjType::reset()
 	numCc = 0;
 	selectedT.reset();
 	visibleT.reset();
+	selectedV = 0;
 }
 
 void myObjType::read3dsFile(char* filename)
