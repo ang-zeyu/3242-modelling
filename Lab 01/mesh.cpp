@@ -63,17 +63,6 @@ void myObjType::draw() {
 		glGetFloatv(GL_MODELVIEW_MATRIX, modelViewMatrix);
 	}
 
-	// Final boss laplacian deformation
-	// For highlighting triangles surrounding the selected vertex
-	unordered_set<int> selectedVerticesSurroundingTriangles;
-	if (selectedV != 0)
-	{
-		for (int t : vToTList[selectedV])
-		{
-			selectedVerticesSurroundingTriangles.insert(t);
-		}
-	}
-
 	// Normal render run
 	for (int i = 1; i <= tcount; i++)
 	{

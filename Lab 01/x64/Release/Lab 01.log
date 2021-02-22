@@ -1,7 +1,11 @@
-﻿  meshSubdivision.cpp
+﻿  laplacianDeformation.cpp
+c:\users\zeyu\desktop\3242-modelling\lab 01\laplaciandeformation.cpp(28): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+c:\users\zeyu\desktop\3242-modelling\lab 01\laplaciandeformation.cpp(178): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\laplaciandeformation.cpp(221): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\laplaciandeformation.cpp(302): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
   Generating code
-  2 of 4445 functions (<0.1%) were compiled, the rest were copied from previous compilation.
+  2 of 4437 functions (<0.1%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    9 functions had inline decision re-evaluated but remain unchanged
+    23 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   Lab 01.vcxproj -> C:\Users\ZeYu\Desktop\3242-modelling\x64\Release\Lab 01.exe

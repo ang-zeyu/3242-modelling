@@ -90,25 +90,48 @@ void myObjType::displace(double* displacement)
         return;
     }
 
-    // Traverse, get all vertices of selected triangles
-	unordered_set<int> selectedVertices = { selectedV };
-	for (int t = 1; t <= tcount; t++)
+	unordered_set<int> selectedVertices;
+
+	// Bfs - optimization - only compute for vertices of the same component of the selected vertex
+	unordered_set<int> processedTriangles;
+	queue<int> triangleQueue; // bfs queue
+	triangleQueue.push(*(vToTList[selectedV].begin()));
+	while (!triangleQueue.empty())
 	{
-		if (selectedT.test(t))
+		int currentTriangle = triangleQueue.front();
+		triangleQueue.pop();
+		processedTriangles.insert(currentTriangle);
+
+		if (selectedT.test(currentTriangle))
 		{
+			// Add the vertices
 			for (int v = 0; v < 3; v++)
 			{
-				selectedVertices.insert(tlist[t][v]);
+				selectedVertices.insert(tlist[currentTriangle][v]);
+			}
+		}
+
+		OrTri* fnTriangles = fnlist[currentTriangle];
+		for (int i = 0; i < 3; i++)
+		{
+			int fnextTriangleIdx = idx(fnTriangles[i]);
+			// Skip self-loops and triangles processed before due to traversal order
+			if (processedTriangles.find(fnextTriangleIdx) == processedTriangles.end())
+			{
+				triangleQueue.push(fnextTriangleIdx);
 			}
 		}
 	}
 
-	// Also add boundary vertices beyond selection as additional position constraints
-	unordered_set<int> boundaryVertices; 
-	for (int t = 1; t <= tcount; t++)
+	// Repeat,
+	// add boundary vertices beyond selection as additional position constraints
+	unordered_set<int> boundaryVertices;
+	int numselected = 0;
+	for (int t : processedTriangles)
 	{
 		if (selectedT.test(t))
 		{
+			numselected += 1;
 			// Boundary vertices beyond selection
 			OrTri* fnTriangles = fnlist[t];
 			for (int i = 0; i < 3; i++)
@@ -116,6 +139,7 @@ void myObjType::displace(double* displacement)
 				int fnextTriangleIdx = idx(fnTriangles[i]);
 				if (!selectedT.test(fnextTriangleIdx))
 				{
+					// cout << "boundary " << fnextTriangleIdx << endl;
 					for (int v = 0; v < 3; v++)
 					{
 						if (selectedVertices.find(tlist[fnextTriangleIdx][v]) == selectedVertices.end())
@@ -127,6 +151,7 @@ void myObjType::displace(double* displacement)
 			}
 		}
 	}
+	// cout << numselected << " " << selectedVertices.size() << endl;
 
 	// Structured as - selected vertex -- beyond boundary vertices -- misc vertices
 	vector<int> vertexList;
@@ -142,7 +167,7 @@ void myObjType::displace(double* displacement)
 			vertexList.push_back(v);
 		}
 	}
-	cout << boundaryVertices.size() << endl;
+	// cout << boundaryVertices.size() << endl;
 
 	// cout << "Obtained all " << totalNumVertices << " vertices of selected triangles" << endl;
 
