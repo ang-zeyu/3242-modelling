@@ -69,6 +69,8 @@ void myObjType::subdivide()
 				average(vlist[vcount], vlist[tlist[t][i]], vlist[tlist[t][(i + 1) % 3]]);
 				edgeVertexMap.insert({ edge, vcount });
 				newMidpointVertices[i] = vcount;
+
+				vToTList[vcount].clear(); // ensure
 			}
 			else
 			{
@@ -85,12 +87,15 @@ void myObjType::subdivide()
 			tlist[tcount][1] = newMidpointVertices[i];
 			tlist[tcount][2] = newMidpointVertices[(i + 2) % 3];
 
+			// Identical normal
 			nlist[tcount][0] = nlist[t][0];
 			nlist[tcount][1] = nlist[t][1];
 			nlist[tcount][2] = nlist[t][2];
 
 			for (int j = 0; j < 3; j++)
+			{
 				vToTList[tlist[tcount][j]].push_back(tcount);
+			}
 
 			selectedT.set(tcount, true);
 		}
@@ -99,12 +104,10 @@ void myObjType::subdivide()
 		for (int i = 0; i < 3; i++)
 		{
 			vToTList[tlist[t][i]].remove(t);                    // remove old v -> t mapping
-			vToTList[newMidpointVertices[i]].push_back(tcount); // new v -> t mapping
-		}
 
-		tlist[t][0] = newMidpointVertices[0];
-		tlist[t][1] = newMidpointVertices[1];
-		tlist[t][2] = newMidpointVertices[2];
+			tlist[t][i] = newMidpointVertices[i];
+			vToTList[tlist[t][i]].push_back(t); // new v -> t mapping
+		}
 
 		// For each version of current triangle
 		// If it is a boundary edge (on selected portion), 
