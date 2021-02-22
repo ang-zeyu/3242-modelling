@@ -127,20 +127,17 @@ void myObjType::subdivide()
 				tlist[tcount][0] = tlist[adjacentTriangleIdx][(adjacentTriangleVer + 1) % 3];
 				tlist[tcount][1] = tlist[adjacentTriangleIdx][(adjacentTriangleVer + 2) % 3];
 				tlist[tcount][2] = newMidpointVertices[v];
-
-				nlist[tcount][0] = nlist[adjacentTriangleIdx][0];
-				nlist[tcount][1] = nlist[adjacentTriangleIdx][1];
-				nlist[tcount][2] = nlist[adjacentTriangleIdx][2];
-
-				// Add vToTList mapping
+				
 				for (int j = 0; j < 3; j++)
-					vToTList[tlist[tcount][j]].push_back(tcount);
+				{
+					nlist[tcount][j] = nlist[adjacentTriangleIdx][j]; // identical normal
+					vToTList[tlist[tcount][j]].push_back(tcount);     // Add vToTList mapping
+				}
 
 				// Update old adjacent triangle
 				// Update vToTList mapping
 				vToTList[newMidpointVertices[v]].push_back(adjacentTriangleIdx);     // new v -> t mapping
-				vToTList[tlist[adjacentTriangleIdx][(adjacentTriangleVer + 1) % 3]]
-					.remove(adjacentTriangleIdx); // remove old mapping
+				vToTList[tlist[adjacentTriangleIdx][(adjacentTriangleVer + 1) % 3]].remove(adjacentTriangleIdx); // remove old mapping
 
 				// Update tlist - just middle vertex
 				tlist[adjacentTriangleIdx][(adjacentTriangleVer + 1) % 3] = newMidpointVertices[v];
