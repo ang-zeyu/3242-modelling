@@ -25,6 +25,8 @@
 #include <iomanip>
 using namespace std;
 
+extern int decimationStepSize;
+
 /*
  My functionalities concerning mesh decimation
  */
@@ -257,11 +259,36 @@ void myObjType::decimate()
 	// Pick by shortest edge length
 	// Exclude boundary edges on selection
 	std::priority_queue<int, std::vector<int>, decltype(cmp)> edgeQueue(cmp);
+	
+	// Build boundary triangle exclusion set, which can create holes
+	unordered_set<OrTri> boundaryTriangleVertexExclusions;
+	for (int t = 1; t <= tcount; t++)
+	{
+		for (int v = 0; v < 3; v++)
+		{
+			OrTri currentTriangle = makeOrTri(t, v);
+			OrTri adjacentTriangle = fnext(currentTriangle);     // triangle adjacent to version i of current triangle
+			if (adjacentTriangle == currentTriangle)
+			{
+				for (int i = 0; i < 3; i++)
+					boundaryTriangleVertexExclusions.insert(tlist[t][i]);
+				break;
+			}
+		}
+	}
 
 	for (int t = 1; t <= tcount; t++)
 	{
 		if (!selectedT.test(t))
 			continue;
+
+		// Use earlier built set
+		if (boundaryTriangleVertexExclusions.find(tlist[t][0]) != boundaryTriangleVertexExclusions.end()
+			|| boundaryTriangleVertexExclusions.find(tlist[t][1]) != boundaryTriangleVertexExclusions.end()
+			|| boundaryTriangleVertexExclusions.find(tlist[t][2]) != boundaryTriangleVertexExclusions.end())
+		{
+			continue;
+		}
 
 		for (int v = 0; v < 3; v++)
 		{
@@ -269,16 +296,17 @@ void myObjType::decimate()
 			OrTri adjacentTriangle = fnext(currentTriangle);     // triangle adjacent to version i of current triangle
 			int adjacentTriangleIdx = idx(adjacentTriangle);
 
-			bool isBoundary = !selectedT.test(adjacentTriangleIdx);
-			if (!isBoundary)
+			// This checks if it is a boundary edge on the *selection*
+			// unlike the previous one which checks if it is a boundary edge on the entire mesh
+			if (selectedT.test(adjacentTriangleIdx))
 			{
 				edgeQueue.push(currentTriangle);
 			}
 		}
 	}
 
-	bool didContract = false;
-	while (!edgeQueue.empty())
+	int numContractedEdges = 0;
+	while (!edgeQueue.empty() && numContractedEdges < decimationStepSize)
 	{
 		OrTri edge = edgeQueue.top();
 		edgeQueue.pop();
@@ -304,6 +332,7 @@ void myObjType::decimate()
 		}
 
 		unordered_set<string> linkEdge = linkE(edge);
+
 		/*cout << linkOrgVAndDestV.size() << " " << linkEdge.size() << endl;;
 
 		setIt = linkOrgVAndDestV.begin();
@@ -325,24 +354,24 @@ void myObjType::decimate()
 			// Contract org to dest
 			if (contract(edge))
 			{
-				didContract = true;
-				break;
+				numContractedEdges += 1;
 			}
 		}
 	}
 
-	if (didContract)
+	if (numContractedEdges == decimationStepSize)
 	{
-		cout << "Contracted an edge!" << endl;
-
-		computeFnlist();
-		computeNormals();
-		computeVertexNormals();
+		cout << "Contracted " << numContractedEdges << " edges!" << endl;
 	}
 	else
 	{
-		cout << "No edges fufilled contraction criteria." << endl;
+		cout << "Contracted " << numContractedEdges << " edges!" << endl;
+		cout << "No or not enough edges fufilled contraction criteria." << endl;
 	}
+
+	computeFnlist();
+	computeNormals();
+	computeVertexNormals();
 }
 
 bool myObjType::contract(OrTri edge)

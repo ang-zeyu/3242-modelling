@@ -43,6 +43,9 @@ bool isSelectingFacing = false;
 bool triggerOffscreenDraw = false;
 bool isDeselecting = false;
 
+// Final boss - decimation
+int decimationStepSize = 1;
+
 // Final boss - laplacian deformation
 double laplacianDeformStepSize = 0.1;
 bool isSelectingVertex = false;
@@ -205,6 +208,16 @@ void keyboard (unsigned char key, int x, int y)
 	case 'd':
 	case 'D':
 		myObj.decimate();
+		break;
+	case 'f':
+	case 'F':
+		decimationStepSize += 1;
+		cout << "Decimation step size: " << decimationStepSize << endl;
+		break;
+	case 'g':
+	case 'G':
+		decimationStepSize -= 1;
+		cout << "Decimation step size: " << decimationStepSize << endl;
 		break;
 	case '1':
 	case '2':
@@ -388,6 +401,9 @@ int main(int argc, char **argv)
 
 	// Final boss
 	cout << "D: Decimate / simplify selected portion of mesh" << endl;
+	cout << "F: Increase decimation count" << endl;
+	cout << "G: Decrease decimation count" << endl;
+
 	cout << "B: Barycentric subdivide selected portion of mesh" << endl;
 	cout << "E: Edge swapping to relax mesh" << endl;
 
