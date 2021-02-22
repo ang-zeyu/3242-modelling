@@ -1149,24 +1149,6 @@ end:
 }
 
 
-inline double* computeAngles(double* v1, double* v2, double* v3)
-{
-	double v1ToV2Len = sqrt(abs(pow(v2[0] - v1[0], 2) + pow(v2[1] - v1[1], 2) + pow(v2[2] - v1[2], 2)));
-	double v1ToV3Len = sqrt(abs(pow(v3[0] - v1[0], 2) + pow(v3[1] - v1[1], 2) + pow(v3[2] - v1[2], 2)));
-	double v2ToV3Len = sqrt(abs(pow(v3[0] - v2[0], 2) + pow(v3[1] - v2[1], 2) + pow(v3[2] - v2[2], 2)));
-
-	// cosine rule
-	double angles[3];
-	angles[0] = acos(
-		(pow(v1ToV2Len, 2) + pow(v1ToV3Len, 2) - pow(v2ToV3Len, 2)) / (2 * v1ToV2Len * v1ToV3Len));
-	angles[1] = acos(
-		(pow(v1ToV2Len, 2) + pow(v2ToV3Len, 2) - pow(v1ToV3Len, 2)) / (2 * v1ToV2Len * v2ToV3Len));
-	angles[2] = acos(
-		(pow(v2ToV3Len, 2) + pow(v1ToV3Len, 2) - pow(v1ToV2Len, 2)) / (2 * v2ToV3Len * v1ToV3Len));
-
-	return angles;
-}
-
 void myObjType::computeStat()
 {
 	int i;
@@ -1181,7 +1163,7 @@ void myObjType::computeStat()
 		double* v2 = vlist[t[1]];
 		double* v3 = vlist[t[2]];
 
-		double* angles = computeAngles(v1, v2, v3);
+		double* angles = computeTriangleAngles(v1, v2, v3);
 
 		double currTriMinAngle = min(angles[0], min(angles[1], angles[2])) * 180.0 / M_PI;
 		double currTriMaxAngle = max(angles[0], max(angles[1], angles[2])) * 180.0 / M_PI;

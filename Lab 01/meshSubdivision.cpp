@@ -192,7 +192,7 @@ void myObjType::relax()
 		}
 	}
 
-	cout << edgeQueue.size() << endl;
+	// cout << edgeQueue.size() << endl;
 	// In any run, modified triangles shall not be checked for relaxation again
 	unordered_set<int> modifiedTriangles;
 
@@ -221,20 +221,53 @@ void myObjType::relax()
 		computeNormalFor(tri2, normal2);
 
 		// dot product formula to get angle
-		double angle = acos(dotProduct(normal1, normal2) / (mag(normal1) * mag(normal2)));
-		cout << dotProduct(normal1, normal2) << " " << mag(normal1) * mag(normal2) << " " <<  angle << " " << relaxationMaxDeviation << endl;
-		if (angle <= relaxationMaxDeviation)
+		double planarAngle = acos(dotProduct(normal1, normal2) / (mag(normal1) * mag(normal2)));
+		// cout << dotProduct(normal1, normal2) << " " << mag(normal1) * mag(normal2) << " " <<  planarAngle << " " << relaxationMaxDeviation << endl;
+		if (planarAngle <= relaxationMaxDeviation)
 		{
 			// Swap edge
 			int ver1 = ver(edge);  // guaranteed to be ver 0 - 2, as pushed earlier into edgeQueue
 			int ver2 = ver(ortri2);
 
-			numRelaxedEdges += 1;
+			// Triangle quality check - rollback if unsatisfactory
+			double* tri1angles = computeTriangleAngles(vlist[tlist[tri1][0]], vlist[tlist[tri1][1]], vlist[tlist[tri1][2]]);
+			double* tri2angles = computeTriangleAngles(vlist[tlist[tri2][0]], vlist[tlist[tri2][1]], vlist[tlist[tri2][2]]);
 
+			double minAngleBefore = min(tri1angles[0], min(tri1angles[1], min(tri1angles[2],
+				min(tri2angles[0], min(tri2angles[1], tri2angles[2]))))) * 180.0 / M_PI;
+
+			int vertexBackups[2];
+			vertexBackups[0] = tlist[tri1][ver1];
+			vertexBackups[1] = tlist[tri2][ver2 < 3 ? ((ver2 + 1) % 3) : (ver2 % 3)];
+
+			// Modify triangle vertex mappings
 			tlist[tri1][ver1] = tlist[tri2][(ver2 + 2) % 3];
 			tlist[tri2][ver2 < 3 ? ((ver2 + 1) % 3) : (ver2 % 3)] = tlist[tri1][(ver1 + 2) % 3];
-			modifiedTriangles.insert(tri1);
-			modifiedTriangles.insert(tri2);
+
+			// Triangle quality check - rollback if unsatisfactory
+			tri1angles = computeTriangleAngles(vlist[tlist[tri1][0]], vlist[tlist[tri1][1]], vlist[tlist[tri1][2]]);
+			tri2angles = computeTriangleAngles(vlist[tlist[tri2][0]], vlist[tlist[tri2][1]], vlist[tlist[tri2][2]]);
+			double minAngleAfter = min(tri1angles[0], min(tri1angles[1], min(tri1angles[2],
+				min(tri2angles[0], min(tri2angles[1], tri2angles[2]))))) * 180.0 / M_PI;
+
+			if (minAngleBefore < minAngleAfter)
+			{
+				numRelaxedEdges += 1;
+				modifiedTriangles.insert(tri1);
+				modifiedTriangles.insert(tri2);
+
+				// Update vToTList mappings
+				vToTList[vertexBackups[0]].remove(tri1);
+				vToTList[vertexBackups[1]].remove(tri2);
+				vToTList[tlist[tri1][ver1]].push_back(tri1);
+				vToTList[tlist[tri2][ver2 < 3 ? ((ver2 + 1) % 3) : (ver2 % 3)]].push_back(tri2);
+			}
+			else
+			{
+				// rollback
+				tlist[tri1][ver1] = vertexBackups[0];
+				tlist[tri2][ver2 < 3 ? ((ver2 + 1) % 3) : (ver2 % 3)] = vertexBackups[1];
+			}
 		}
 	}
 

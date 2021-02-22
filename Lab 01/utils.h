@@ -58,3 +58,21 @@ inline double dotProduct(double v1[3], double v2[3])
 		+ v1[1] * v2[1]
 		+ v1[2] * v2[2];
 }
+
+inline double* computeTriangleAngles(double* v1, double* v2, double* v3)
+{
+	double v1ToV2Len = sqrt(abs(pow(v2[0] - v1[0], 2) + pow(v2[1] - v1[1], 2) + pow(v2[2] - v1[2], 2)));
+	double v1ToV3Len = sqrt(abs(pow(v3[0] - v1[0], 2) + pow(v3[1] - v1[1], 2) + pow(v3[2] - v1[2], 2)));
+	double v2ToV3Len = sqrt(abs(pow(v3[0] - v2[0], 2) + pow(v3[1] - v2[1], 2) + pow(v3[2] - v2[2], 2)));
+
+	// cosine rule
+	double angles[3];
+	angles[0] = acos(
+		(pow(v1ToV2Len, 2) + pow(v1ToV3Len, 2) - pow(v2ToV3Len, 2)) / (2 * v1ToV2Len * v1ToV3Len));
+	angles[1] = acos(
+		(pow(v1ToV2Len, 2) + pow(v2ToV3Len, 2) - pow(v1ToV3Len, 2)) / (2 * v1ToV2Len * v2ToV3Len));
+	angles[2] = acos(
+		(pow(v2ToV3Len, 2) + pow(v1ToV3Len, 2) - pow(v1ToV2Len, 2)) / (2 * v2ToV3Len * v1ToV3Len));
+
+	return angles;
+}
