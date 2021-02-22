@@ -198,6 +198,7 @@ void keyboard (unsigned char key, int x, int y)
 		break;
 	case 'd':
 	case 'D':
+		myObj.decimate();
 		break;
 	case '1':
 	case '2':

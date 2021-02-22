@@ -113,7 +113,9 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mesh.cpp" />
-    <ClCompile Include="utils.cpp" />
+    <ClCompile Include="meshDecimation.cpp" />
+    <ClCompile Include="meshSubdivision.cpp" />
+    <ClCompile Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

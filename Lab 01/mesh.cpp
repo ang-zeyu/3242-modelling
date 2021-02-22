@@ -14,6 +14,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <iterator>
 #include <stdio.h>
 #include <fstream>
 #include <iostream>
@@ -72,9 +73,13 @@ void myObjType::draw() {
 		if (selectedT.test(i))
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, cyanmat_diffuse);
 
+		if (!m_Smooth)
+			glNormal3dv(nlist[i]);
+
 		for (int j = 0; j < 3; j++)
 		{
-			glNormal3dv(vnlist[tlist[i][j]]); // Moved down here, use vnlist for lab 2 optional task (vertex normals)
+			if (m_Smooth)
+				glNormal3dv(vnlist[tlist[i][j]]); // Use vnlist for lab 2 optional task (vertex normals)
 
 			// Lab 2 boundary edge visualisation optional task
 			/*if (fnlist[i][j] == makeOrTri(i, j))
@@ -711,41 +716,35 @@ void myObjType::postReadFile()
 }
 
 // Lab 1 Task 1 Normal Computation
-void crossProduct(double result[3], double v1[3], double v2[3])
+void myObjType::computeNormalFor(int t, double result[3])
 {
-	result[0] = v1[1] * v2[2] - v2[1] * v1[2];
-	result[1] = v2[0] * v1[2] - v1[0] * v2[2];
-	result[2] = v1[0] * v2[1] - v2[0] * v1[1];
+	int v1Idx = tlist[t][0];
+	double* v1 = vlist[v1Idx];
+	int v2Idx = tlist[t][1];
+	double* v2 = vlist[v2Idx];
+	int v3Idx = tlist[t][2];
+	double* v3 = vlist[v3Idx];
+
+	double v2MinusV1[3];
+	subtractV(v2MinusV1, v2, v1);
+
+	double v3MinusV1[3];
+	subtractV(v3MinusV1, v3, v1);
+
+	double crossProd[3];
+	crossProduct(crossProd, v2MinusV1, v3MinusV1);
+	double magnitude = sqrt(pow(crossProd[0], 2) + pow(crossProd[1], 2) + pow(crossProd[2], 2));
+
+	result[0] = crossProd[0] / magnitude;
+	result[1] = crossProd[1] / magnitude;
+	result[2] = crossProd[2] / magnitude;
 }
 
 void myObjType::computeNormals()
 {
-	for (int i = 1; i <= tcount; i++)
+	for (int t = 1; t <= tcount; t++)
 	{
-		int v1Idx = tlist[i][0];
-		double* v1 = vlist[v1Idx];
-		int v2Idx = tlist[i][1];
-		double* v2 = vlist[v2Idx];
-		int v3Idx = tlist[i][2];
-		double* v3 = vlist[v3Idx];
-
-		double v2MinusV1[3];
-		v2MinusV1[0] = v2[0] - v1[0];
-		v2MinusV1[1] = v2[1] - v1[1];
-		v2MinusV1[2] = v2[2] - v1[2];
-
-		double v3MinusV1[3];
-		v3MinusV1[0] = v3[0] - v1[0];
-		v3MinusV1[1] = v3[1] - v1[1];
-		v3MinusV1[2] = v3[2] - v1[2];
-
-		double crossProd[3];
-		crossProduct(crossProd, v2MinusV1, v3MinusV1);
-		double magnitude = sqrt(pow(crossProd[0], 2) + pow(crossProd[1], 2) + pow(crossProd[2], 2));
-
-		nlist[i][0] = crossProd[0] / magnitude;
-		nlist[i][1] = crossProd[1] / magnitude;
-		nlist[i][2] = crossProd[2] / magnitude;
+		computeNormalFor(t, nlist[t]);
 	}
 }
 // Lab 1 Task 1 Normal Computation End
@@ -925,15 +924,6 @@ void myObjType::computeFnlist()
 			}
 		}
 	}
-}
-
-// Lab 2 Main task
-inline OrTri myObjType::fnext(OrTri t)
-{
-	int v = ver(t);
-	return v < 3
-		? fnlist[idx(t)][v]
-		: sym(fnlist[idx(t)][v - 3]);
 }
 
 // Lab 2 optional task
@@ -1172,35 +1162,4 @@ void myObjType::computeStat()
 	cout << endl;
 
 	computeNumCc();
-}
-
-// Lab 2 Main task
-inline int myObjType::org(OrTri t)
-{
-	/*
-	 Versions 0 to 2:
-	 // First 3 would just be the version number
-	 // Latter 3 takes on the middle column (due to sym)
-	 0 1 2
-	 1 2 0
-	 2 0 1
-	*/
-	int v = ver(t);
-	return tlist
-		[idx(t)]
-		[v < 3 ? v : (v + 1) % 3];
-}
-
-// Lab 2 Main task
-inline int myObjType::dest(OrTri t)
-{
-	/*
-	 dest(ver 0) = dest(ver 3)
-	 dest(ver 1) = dest(ver 4)
-	 dest(ver 2) = dest(ver 5)
-	*/
-	int v = ver(t);
-	return tlist
-		[idx(t)]
-		[(v + 2) % 3];
 }
