@@ -102,21 +102,25 @@ void myObjType::displace(double* displacement)
 		triangleQueue.pop();
 		processedTriangles.insert(currentTriangle);
 
-		if (selectedT.test(currentTriangle))
+		// Add the vertices
+		for (int v = 0; v < 3; v++)
 		{
-			// Add the vertices
-			for (int v = 0; v < 3; v++)
-			{
-				selectedVertices.insert(tlist[currentTriangle][v]);
-			}
+			selectedVertices.insert(tlist[currentTriangle][v]);
 		}
 
 		OrTri* fnTriangles = fnlist[currentTriangle];
 		for (int i = 0; i < 3; i++)
 		{
 			int fnextTriangleIdx = idx(fnTriangles[i]);
-			// Skip self-loops and triangles processed before due to traversal order
-			if (processedTriangles.find(fnextTriangleIdx) == processedTriangles.end())
+			
+			if (
+				// Skip self-loops and triangles processed before due to traversal order
+				processedTriangles.find(fnextTriangleIdx) == processedTriangles.end()
+				// Also, limit traversal to selected triangles from the selected vertex, because in minimising shape,
+				// 'Disjoint' selected triangles from the selected vertex but in the same component
+				// Would stay the same anyway
+				&& selectedT.test(fnextTriangleIdx)
+				)
 			{
 				triangleQueue.push(fnextTriangleIdx);
 			}
