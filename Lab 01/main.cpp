@@ -32,16 +32,18 @@ GLfloat angle = 0;   /* in degrees */
 GLfloat angle2 = 0;   /* in degrees */
 GLfloat zoom = 1.0;
 int mouseButton = 0;
-int moving, startx, starty;
+int moving, mouseDownStartX, mouseDownStartY;
 
 // For lab 2 optional task - user select marquee
-int currX, currY;
+int mouseCurrX, mouseCurrY;
 double selectBoxCoords[6];
 float projectionMatrix[16];
 bool isSelecting = false;
 bool isSelectingFacing = false;
 bool triggerOffscreenDraw = false;
 bool isDeselecting = false;
+double CAMERA_Z = 10.0; // extracted as constant for calculations
+double NEAR_Z = 1.0;    // extracted as constant for calculations
 
 // Final boss - relaxation
 int relaxationStepSize = 1;
@@ -87,7 +89,6 @@ void setupLighting()
 }
 
 
-
 void display(void)
 {
 
@@ -105,7 +106,7 @@ void display(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glPushMatrix();
-		gluLookAt(0, 0, 10, 0, 0, 0, 0, 1, 0);
+		gluLookAt(0, 0, CAMERA_Z, 0, 0, 0, 0, 1, 0);
 
 		// Lab 2 Optional task - draw user select marquee, store projection matrix
 		if (isSelecting)
@@ -118,16 +119,29 @@ void display(void)
 					glColor4d(200, 30, 0, 0.3);
 				else
 					glColor4d(0, 30, 200, 0.3);
-				glTranslated(0, 0, 5.0);
+				glTranslated(0, 0, CAMERA_Z - NEAR_Z);
+
+				// Calculate selection rectangle coordinates
 				int windowWidth = glutGet(GLUT_WINDOW_WIDTH);
 				int windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
-				double nearPlaneLength = tan(20.0 / 180.0 * M_PI) * 5 * 2;
-				selectBoxCoords[0] = (startx - windowWidth / 2.0) / windowWidth * nearPlaneLength;
-				selectBoxCoords[1] = ((windowHeight - starty) - windowHeight / 2.0) / windowHeight * nearPlaneLength;
-				selectBoxCoords[2] = -5;
-				selectBoxCoords[3] = (currX - windowWidth / 2.0) / windowWidth * nearPlaneLength;
-				selectBoxCoords[4] = ((windowHeight - currY) - windowHeight / 2.0) / windowHeight * nearPlaneLength;
-				selectBoxCoords[5] = -5;
+				double nearPlaneLength = tan(20.0 / 180.0 * M_PI) * NEAR_Z * 2.0;
+
+				double startX = (mouseDownStartX - windowWidth / 2.0) / windowWidth * nearPlaneLength;
+				double startY = ((windowHeight - mouseDownStartY) - windowHeight / 2.0) / windowHeight * nearPlaneLength;
+				double endX = (mouseCurrX - windowWidth / 2.0) / windowWidth * nearPlaneLength;
+				double endY = ((windowHeight - mouseCurrY) - windowHeight / 2.0) / windowHeight * nearPlaneLength;
+
+				// Top left
+				selectBoxCoords[0] = min(startX, endX);
+				selectBoxCoords[1] = max(startY, endY);
+				// Bottom right
+				selectBoxCoords[3] = max(startX, endX);
+				selectBoxCoords[4] = min(startY, endY);
+
+				// not used in rendering glRectdv, but projection / mv matrix multiplication later
+				selectBoxCoords[2] = -NEAR_Z;
+				selectBoxCoords[5] = -NEAR_Z;
+
 				glRectdv(selectBoxCoords, selectBoxCoords + 3);
 			glPopMatrix();
 		}
@@ -321,15 +335,15 @@ void mouse(int button, int state, int x, int y)
 			moving = 1;
 		}
 
-		startx = x;
-		starty = y;
+		mouseDownStartX = x;
+		mouseDownStartY = y;
     }
 	
 	// Lab 2 Optional task - user select marquee
 	if (isSelecting)
 	{
-		currX = x;
-		currY = y;
+		mouseCurrX = x;
+		mouseCurrY = y;
 	}
 	
 	if (state == GLUT_UP)
@@ -340,16 +354,21 @@ void mouse(int button, int state, int x, int y)
 		// Lab 2 Optional task - user select marquee
 		if (isSelecting)
 		{
-			// If using ctrl-alt click drag mode, delay computation to display callback,
-			// where a offscreen draw is triggered to populate triangles with unique colours
-			// (determine which primitives are on screen)
-			triggerOffscreenDraw = isSelectingFacing;
-			if (!triggerOffscreenDraw)
+			if (isSelectingFacing)
 			{
+				// If using ctrl-alt click drag mode, delay computation to display callback,
+				// where a offscreen draw is triggered to populate triangles with unique colours
+				// (determine which primitives are on screen)
+				triggerOffscreenDraw = true;
+			}
+			else
+			{
+				triggerOffscreenDraw = false;
 				myObj.computeSelectedTriangles();
 				isDeselecting = false;
 				isSelectingFacing = false;
 			}
+
 			isSelecting = false;
 		}
     }
@@ -364,23 +383,23 @@ void motion(int x, int y)
 	{
 		if (mouseButton == GLUT_LEFT_BUTTON)
 		{
-			angle = angle + (x - startx);
-			angle2 = angle2 + (y - starty);
+			angle = angle + (x - mouseDownStartX);
+			angle2 = angle2 + (y - mouseDownStartY);
 		}
 		else
 		{
-			zoom += ((y - starty) * 0.001);
+			zoom += ((y - mouseDownStartY) * 0.001);
 		}
 
-		startx = x;
-		starty = y;
+		mouseDownStartX = x;
+		mouseDownStartY = y;
 		glutPostRedisplay();
     }
 	else if (isSelecting)
 	{
 		// Lab 2 Optional task - user select marquee
-		currX = x;
-		currY = y;
+		mouseCurrX = x;
+		mouseCurrY = y;
 		glutPostRedisplay();
 	}
 }
@@ -416,7 +435,7 @@ int main(int argc, char **argv)
 	// Final boss
 	cout << "D: Decimate / simplify selected portion of mesh" << endl;
 	cout << "F: Increase decimation count" << endl;
-	cout << "G: Decrease decimation count" << endl;
+	cout << "G: Decrease decimation count" << endl << endl;
 
 	cout << "B: Barycentric subdivide selected portion of mesh" << endl << endl;
 
@@ -450,8 +469,8 @@ int main(int argc, char **argv)
 
     glMatrixMode(GL_PROJECTION);
     gluPerspective( /* field of view in degree */ 40.0,
-  /* aspect ratio */ 1.0,
-    /* Z near */ 1.0, /* Z far */ 80.0);
+					/* aspect ratio */ 1.0,
+					/* Z near */ NEAR_Z, /* Z far */ 80.0);
 	glMatrixMode(GL_MODELVIEW);
 	glutMainLoop();
 

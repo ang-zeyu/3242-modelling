@@ -244,18 +244,7 @@ void myObjType::displace(double* displacement)
 		{
 			for (int row = baseRowIdx; row < baseRowIdx + 3; row++)
 			{
-				/*if (selectedVertices.find(neighbour) != selectedVertices.end()
-					|| boundaryVertices.find(neighbour) != boundaryVertices.end())
-				{*/
-					// Neighbours in Ax = b;
-					b(row) += (negativeOneOverN * vlist[neighbour][row % 3]);
-				//}
-				//else
-				//{
-				//	// Boundary neighbours not selected (not in Ax = b)
-				//	// Negative because it is not in the linear system
-				//	// b(row) += negativeOneOverN * vlist[neighbour][row % 3];
-				//}
+				b(row) += (negativeOneOverN * vlist[neighbour][row % 3]);
 			}
 		}
 
@@ -320,7 +309,7 @@ void myObjType::displace(double* displacement)
 
 	 where A1 (totalEntries * 3) A2 is (totalEntries * (totalEntries - 3)) sub-matrices of A
 	 */
-	cout << A.rows() << "," << A.cols() << endl;
+	// cout << A.rows() << "," << A.cols() << endl;
 
 	MatrixXd A1 = A.block(0, 0,              totalEntries, numConstraints);
 	MatrixXd A2 = A.block(0, numConstraints, totalEntries, totalEntries - numConstraints);
