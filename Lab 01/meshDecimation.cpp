@@ -270,8 +270,8 @@ void myObjType::decimate()
 			OrTri adjacentTriangle = fnext(currentTriangle);     // triangle adjacent to version i of current triangle
 			if (adjacentTriangle == currentTriangle)
 			{
-				for (int i = 0; i < 3; i++)
-					boundaryTriangleVertexExclusions.insert(tlist[t][i]);
+				boundaryTriangleVertexExclusions.insert(org(currentTriangle));
+				boundaryTriangleVertexExclusions.insert(dest(currentTriangle));
 				break;
 			}
 		}
@@ -282,24 +282,24 @@ void myObjType::decimate()
 		if (!selectedT.test(t))
 			continue;
 
-		// Use earlier built set
-		if (boundaryTriangleVertexExclusions.find(tlist[t][0]) != boundaryTriangleVertexExclusions.end()
-			|| boundaryTriangleVertexExclusions.find(tlist[t][1]) != boundaryTriangleVertexExclusions.end()
-			|| boundaryTriangleVertexExclusions.find(tlist[t][2]) != boundaryTriangleVertexExclusions.end())
-		{
-			continue;
-		}
-
 		for (int v = 0; v < 3; v++)
 		{
 			OrTri currentTriangle = makeOrTri(t, v);
 			OrTri adjacentTriangle = fnext(currentTriangle);     // triangle adjacent to version i of current triangle
-			int adjacentTriangleIdx = idx(adjacentTriangle);
+			int adjacentTriangleIdx = idx(adjacentTriangle);			
 
-			// This checks if it is a boundary edge on the *selection*
-			// unlike the previous one which checks if it is a boundary edge on the entire mesh
+			// This checks if it is a boundary edge on the **user selection**
+			// unlike the next one which checks if it is a boundary edge on the entire mesh
 			if (selectedT.test(adjacentTriangleIdx))
 			{
+				// Use earlier built set to exclude edges touching boundary vertices of the **entire mesh**
+				if (boundaryTriangleVertexExclusions.find(org(currentTriangle)) != boundaryTriangleVertexExclusions.end()
+					|| boundaryTriangleVertexExclusions.find(dest(currentTriangle)) != boundaryTriangleVertexExclusions.end())
+				{
+					// cout << "Boundary triangle vertex exclusion fail!" << endl;
+					continue;
+				}
+
 				edgeQueue.push(currentTriangle);
 			}
 		}
@@ -356,7 +356,15 @@ void myObjType::decimate()
 			{
 				numContractedEdges += 1;
 			}
+			/*else
+			{
+				cout << "triangle flipped!" << endl;
+			}*/
 		}
+		/*else
+		{
+			cout << "Link not equal!" << endl;
+		}*/
 	}
 
 	if (numContractedEdges == decimationStepSize)
