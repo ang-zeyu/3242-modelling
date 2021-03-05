@@ -260,7 +260,7 @@ void myObjType::decimate()
 	// Exclude boundary edges on selection
 	std::priority_queue<int, std::vector<int>, decltype(cmp)> edgeQueue(cmp);
 	
-	// Build boundary triangle exclusion set, which can create holes
+	// Build boundary triangle exclusion set, which can create holes, alter topology significantly
 	unordered_set<OrTri> boundaryTriangleVertexExclusions;
 	for (int t = 1; t <= tcount; t++)
 	{
@@ -270,6 +270,7 @@ void myObjType::decimate()
 			OrTri adjacentTriangle = fnext(currentTriangle);     // triangle adjacent to version i of current triangle
 			if (adjacentTriangle == currentTriangle)
 			{
+				// Mesh boundary edge
 				boundaryTriangleVertexExclusions.insert(org(currentTriangle));
 				boundaryTriangleVertexExclusions.insert(dest(currentTriangle));
 				break;
@@ -277,94 +278,111 @@ void myObjType::decimate()
 		}
 	}
 
-	for (int t = 1; t <= tcount; t++)
-	{
-		if (!selectedT.test(t))
-			continue;
-
-		for (int v = 0; v < 3; v++)
-		{
-			OrTri currentTriangle = makeOrTri(t, v);
-			OrTri adjacentTriangle = fnext(currentTriangle);     // triangle adjacent to version i of current triangle
-			int adjacentTriangleIdx = idx(adjacentTriangle);			
-
-			// This checks if it is a boundary edge on the **user selection**
-			// unlike the next one which checks if it is a boundary edge on the entire mesh
-			if (selectedT.test(adjacentTriangleIdx))
-			{
-				// Use earlier built set to exclude edges touching boundary vertices of the **entire mesh**
-				if (boundaryTriangleVertexExclusions.find(org(currentTriangle)) != boundaryTriangleVertexExclusions.end()
-					|| boundaryTriangleVertexExclusions.find(dest(currentTriangle)) != boundaryTriangleVertexExclusions.end())
-				{
-					// cout << "Boundary triangle vertex exclusion fail!" << endl;
-					continue;
-				}
-
-				edgeQueue.push(currentTriangle);
-			}
-		}
-	}
-
 	int numContractedEdges = 0;
-	while (!edgeQueue.empty() && numContractedEdges < decimationStepSize)
+	while (numContractedEdges < decimationStepSize)
 	{
-		OrTri edge = edgeQueue.top();
-		edgeQueue.pop();
-
-		/*cout << idx(edge) << " " << ver(edge) << " " << org(edge) << " " << dest(edge) 
-			<< " " << tlist[idx(edge)][0] << " " << tlist[idx(edge)][1] << " " << tlist[idx(edge)][2] << endl;*/
-		int orgV = org(edge);
-		int destV = dest(edge);
-
-		unordered_set<string> linkOrgV = linkV(orgV);
-		unordered_set<string> linkDestV = linkV(destV);
-		// cout << linkOrgV.size() << endl;
-
-		unordered_set<string> linkOrgVAndDestV;
-
-		unordered_set<string>::iterator setIt = linkOrgV.begin();
-		for (; setIt != linkOrgV.end(); setIt++)
+		// Update PQ
+		for (int t = 1; t <= tcount; t++)
 		{
-			if (linkDestV.find(*setIt) != linkDestV.end())
+			if (!selectedT.test(t))
+				continue;
+
+			for (int v = 0; v < 3; v++)
 			{
-				linkOrgVAndDestV.insert(*setIt);
+				OrTri currentTriangle = makeOrTri(t, v);
+				OrTri adjacentTriangle = fnext(currentTriangle);     // triangle adjacent to version i of current triangle
+				int adjacentTriangleIdx = idx(adjacentTriangle);
+
+				// This checks if it is a boundary edge on the **user selection**
+				// unlike the next one which checks if it is a boundary edge on the entire mesh
+				if (selectedT.test(adjacentTriangleIdx))
+				{
+					// Use earlier built set to exclude edges touching boundary vertices of the **entire mesh**
+					// Only check org, as I'm contracting org -> dest. Allow the reverse.
+					if (boundaryTriangleVertexExclusions.find(org(currentTriangle)) != boundaryTriangleVertexExclusions.end())
+					{
+						// cout << "Boundary triangle vertex exclusion fail!" << endl;
+						continue;
+					}
+
+					edgeQueue.push(currentTriangle);
+				}
 			}
 		}
-
-		unordered_set<string> linkEdge = linkE(edge);
-
-		/*cout << linkOrgVAndDestV.size() << " " << linkEdge.size() << endl;;
-
-		setIt = linkOrgVAndDestV.begin();
-		for (; setIt != linkOrgVAndDestV.end(); setIt++)
+		
+		while (!edgeQueue.empty())
 		{
-			cout << *setIt << " ";
-		}
-		cout << endl;
+			OrTri edge = edgeQueue.top();
+			edgeQueue.pop();
 
-		setIt = linkEdge.begin();
-		for (; setIt != linkEdge.end(); setIt++)
-		{
-			cout << *setIt << " ";
-		}
-		cout << endl;*/
+			/*cout << idx(edge) << " " << ver(edge) << " " << org(edge) << " " << dest(edge)
+				<< " " << tlist[idx(edge)][0] << " " << tlist[idx(edge)][1] << " " << tlist[idx(edge)][2] << endl;*/
+			int orgV = org(edge);
+			int destV = dest(edge);
 
-		if (linkOrgVAndDestV == linkEdge)
-		{
-			// Contract org to dest
-			if (contract(edge))
+			unordered_set<string> linkOrgV = linkV(orgV);
+			unordered_set<string> linkDestV = linkV(destV);
+			// cout << linkOrgV.size() << endl;
+
+			unordered_set<string> linkOrgVAndDestV;
+
+			unordered_set<string>::iterator setIt = linkOrgV.begin();
+			for (; setIt != linkOrgV.end(); setIt++)
 			{
-				numContractedEdges += 1;
+				if (linkDestV.find(*setIt) != linkDestV.end())
+				{
+					linkOrgVAndDestV.insert(*setIt);
+				}
+			}
+
+			unordered_set<string> linkEdge = linkE(edge);
+
+			/*cout << linkOrgVAndDestV.size() << " " << linkEdge.size() << endl;;
+
+			setIt = linkOrgVAndDestV.begin();
+			for (; setIt != linkOrgVAndDestV.end(); setIt++)
+			{
+				cout << *setIt << " ";
+			}
+			cout << endl;
+
+			setIt = linkEdge.begin();
+			for (; setIt != linkEdge.end(); setIt++)
+			{
+				cout << *setIt << " ";
+			}
+			cout << endl;*/
+
+			if (linkOrgVAndDestV == linkEdge)
+			{
+				// Contract org to dest
+				if (contract(edge))
+				{
+					numContractedEdges += 1;
+					computeFnlist();
+					break;
+				}
+				/*else
+				{
+					cout << "triangle flipped!" << endl;
+				}*/
 			}
 			/*else
 			{
-				cout << "triangle flipped!" << endl;
+				cout << "Link not equal!" << endl;
 			}*/
 		}
-		/*else
+
+		if (edgeQueue.empty())
 		{
-			cout << "Link not equal!" << endl;
-		}*/
+			break;
+		}
+
+		// Reset PQ
+		while (!edgeQueue.empty())
+		{
+			edgeQueue.pop();
+		}
 	}
 
 	if (numContractedEdges == decimationStepSize)
@@ -377,7 +395,6 @@ void myObjType::decimate()
 		cout << "No or not enough edges fufilled contraction criteria." << endl;
 	}
 
-	computeFnlist();
 	computeNormals();
 	computeVertexNormals();
 }

@@ -1,5 +1,5 @@
 ﻿  meshDecimation.cpp
-c:\users\zeyu\desktop\3242-modelling\lab 01\meshdecimation.cpp(499): warning C4267: '-=': conversion from 'size_t' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\meshdecimation.cpp(516): warning C4267: '-=': conversion from 'size_t' to 'int', possible loss of data
   Generating code
   2 of 4437 functions (<0.1%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
