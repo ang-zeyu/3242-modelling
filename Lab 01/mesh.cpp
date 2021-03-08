@@ -918,17 +918,23 @@ void myObjType::computeFnlist()
 		{
 			pair<int, int> currentEdge = v < 3
 				? make_pair(tlist[t][v], tlist[t][(v + 1) % 3])
-				: make_pair(tlist[t][(v + 1) % 3], tlist[t][v % 3]);
+				: make_pair(tlist[t][(v + 1) % 3], tlist[t][v - 3]);
 
 			if (edgeTriangleMap.find(currentEdge) == edgeTriangleMap.end())
 			{
+				// Each edge belongs to 2 OrTri only, since we can assume manifolds as mentioned in tutorial
 				OrTri* initialArrayPair = (OrTri*)malloc(sizeof(OrTri) * 2);
-				initialArrayPair[0] = 0; initialArrayPair[1] = 0;
+				initialArrayPair[0] = makeOrTri(t, v); initialArrayPair[1] = 0;
 				edgeTriangleMap.insert({ currentEdge, initialArrayPair });
 			}
-
-			OrTri* orTriPair = edgeTriangleMap.at(currentEdge);
-			orTriPair[orTriPair[0] == 0 ? 0 : 1] = makeOrTri(t, v);
+			else
+			{
+				OrTri* orTriPair = edgeTriangleMap.at(currentEdge);
+				if (orTriPair[1] == 0)
+				{
+					orTriPair[1] = makeOrTri(t, v);
+				}
+			}
 		}
 	}
 
@@ -946,12 +952,11 @@ void myObjType::computeFnlist()
 			}
 
 			OrTri* orTriPair = edgeTriangleMap.at(currentEdge);
-			OrTri current = makeOrTri(t, v);
-			if (orTriPair[0] != 0 && orTriPair[0] != current)
+			if (/* orTriPair[0] != 0 && - first item will always be non-zero */ idx(orTriPair[0]) != t)
 			{
 				fnlist[t][v] = orTriPair[0];
 			}
-			else if (orTriPair[1] != 0 && orTriPair[1] != current)
+			else if (orTriPair[1] != 0 && idx(orTriPair[1]) != t)
 			{
 				fnlist[t][v] = orTriPair[1];
 			}
