@@ -961,6 +961,12 @@ void myObjType::computeFnlist()
 			}
 		}
 	}
+
+	unordered_map<pair<int, int>, OrTri*, pairHash>::iterator mapIt;
+	for (mapIt = edgeTriangleMap.begin(); mapIt != edgeTriangleMap.end(); mapIt++)
+	{
+		free(mapIt->second);
+	}
 }
 
 // Lab 2 optional task
