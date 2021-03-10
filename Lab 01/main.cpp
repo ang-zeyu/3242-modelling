@@ -427,27 +427,33 @@ int main(int argc, char **argv)
 	cout << "Right mouse click and drag: zooming" << endl;
 
 	// Lab 2 optional task - user selection
-	cout << endl << "Triangle selection:" << endl;
+	cout << endl << "----------Triangle selection:----------" << endl;
 	cout << "Left mouse ctrl-click and drag: selection box" << endl; 
 	cout << "Left mouse ctrl-shift-click and drag: deselection box" << endl;
 	cout << "Combine the above two with \"alt\" to select / deselect only visible triangles" << endl;
 
 	// Final boss
+	cout << endl << "----------Mesh decimation:----------" << endl;
 	cout << "D: Decimate / simplify selected portion of mesh" << endl;
 	cout << "F: Increase decimation count" << endl;
-	cout << "G: Decrease decimation count" << endl << endl;
+	cout << "G: Decrease decimation count" << endl;
 
-	cout << "B: Barycentric subdivide selected portion of mesh" << endl << endl;
+	cout << endl << "----------Mesh subdivision:----------" << endl;
+	cout << "B: Barycentric subdivide selected portion of mesh" << endl;
 
+	cout << endl << "----------Mesh relaxation:----------" << endl;
 	cout << "E: Edge swapping to relax mesh" << endl;
 	cout << "Y: Increase relaxation step size" << endl;
-	cout << "U: Decrease relaxation step size" << endl << endl;
+	cout << "U: Decrease relaxation step size" << endl;
 
-	cout << "T: Smooth mesh with laplacian smoothing" << endl << endl;
+	cout << endl << "----------Laplacian smoothing:----------" << endl;
+	cout << "T: Smooth mesh with laplacian smoothing" << endl;
+
+	cout << endl << "----------Laplacian deformation:----------" << endl;
 	cout << "Alt (without ctrl) click drag to select a vertex for laplacian deformation," << endl
 		<< "  with some selected triangles first (see above instructions)" << endl;
 	cout << "Use left (-x) right(+x) up(+y) down(-y) pgup(+z) pgdown(-z) keys to laplacian-deform" << endl;
-	cout << "Use home (decrease) and end (increase) keys to increase / decrease laplacian deform step size" << endl;
+	cout << "Use home (-) / end (+) keys to increase / decrease laplacian deform step size" << endl;
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);

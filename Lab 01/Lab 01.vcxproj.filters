@@ -24,9 +24,6 @@
     <ClCompile Include="meshDecimation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="meshSubdivision.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="utils.h">
       <Filter>Header Files</Filter>
     </ClCompile>
@@ -34,6 +31,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="laplacianSmoothing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="meshSubdivisionAndRelaxation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
