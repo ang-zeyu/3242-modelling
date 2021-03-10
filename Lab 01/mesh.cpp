@@ -32,7 +32,7 @@ float rmat_diffuse[] = { 1, 0, 0, 1.0f }; // Lab 2 boundary edge visualisation o
 extern float projectionMatrix[];
 float modelViewMatrix[16]; // store opengl's mv matrix at time of selection
 float cyanmat_diffuse[] = { 0, 1, 1, 1.0f };   // selected triangles highlight
-float greenmat_diffuse[] = { 0, 1, 0.5, 1.0f }; // selected triangles border highlight
+float greenmat_diffuse[] = { 0, 0.4, 0, 1.0f }; // selected triangles border highlight
 extern double selectBoxCoords[];
 extern bool isSelecting, isDeselecting;
 // for isSelectingFacing mode (ctrl-alt click drag)
