@@ -33,15 +33,19 @@ I implemented connected component checks as well to make this more performant.
 
 <img src="./3242-laplacian-deformation-1.gif" />
 
+<img src="./3242-laplacian-deformation-2.gif" />
+
 
 ### Mesh Decimation
 
-"Straightforward"!
+"Straightforward"! (lots of under the hood checks using the trist structure)
 
 <img src="./3242-decimation.gif" />
 
 
 ### Mesh Subdivision, Laplacian Smoothing
+
+Also "straightforward".
 
 <img src="./3242-subdivision-smoothing.gif" />
 
