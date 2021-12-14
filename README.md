@@ -32,9 +32,10 @@ The optimization objective is to **preserve the shape** of the deformed mesh as 
 I implemented connected component checks as well to make this more performant.
 
 <img src="./3242-laplacian-deformation-1.gif" />
+(making the deer look slightly happier)
 
 <img src="./3242-laplacian-deformation-2.gif" />
-
+(add some apparent motion to its legs)
 
 ### Mesh Decimation
 
