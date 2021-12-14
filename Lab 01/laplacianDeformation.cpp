@@ -343,3 +343,78 @@ void myObjType::displace(double* displacement)
 	computeNormals();
 	computeVertexNormals();
 }
+
+long substrCount(int n, string s) {
+	long numSubstrings = 0;
+
+	// a aa aaa ... contribution
+	char prevChar = ' ';
+	int prevCharCount = 0;
+	for (int i = 0; i < s.length(); i++)
+	{
+		if (s[i] != prevChar && prevChar != ' ')
+		{
+			numSubstrings += (prevCharCount * (prevCharCount + 1)) / 2;
+
+			prevChar = s[i];
+			prevCharCount = 1;
+		}
+		else
+		{
+			prevChar = s[i];
+			prevCharCount += 1;
+		}
+	}
+
+	
+	numSubstrings += (prevCharCount * (prevCharCount + 1)) / 2;
+	
+
+	// ada axa aaxaa ... contributions
+	// Normally, such a string can be split into 3 segments,
+	// Generating a further n * (n-1) + 1 special substrings.
+	// But this is already accounted for by the earlier loop.
+	// Here, only take into account the contribution from such "palindromic" strings itself
+	char prevprevChar = ' ';
+	int prevprevCharCount = 0;
+	bool isMatching = false;
+
+	prevChar = ' ';
+	prevCharCount = 0;
+
+	for (int i = 0; i < s.length(); i++)
+	{
+		if (s[i] != prevChar)
+		{
+			if (s[i] == prevprevChar)
+			{
+				isMatching = true;
+			}
+			else
+			{
+				if (isMatching)
+				{
+					isMatching = false;
+					numSubstrings += min(prevprevCharCount, prevCharCount);
+				}
+
+				prevprevChar = prevChar;
+				prevprevCharCount = prevCharCount;
+			}
+
+			prevChar = s[i];
+			prevCharCount = 1;
+		}
+		else
+		{
+			prevCharCount += 1;
+		}
+	}
+
+	if (isMatching)
+	{
+		numSubstrings += min(prevprevCharCount, prevCharCount);
+	}
+
+	return numSubstrings;
+}

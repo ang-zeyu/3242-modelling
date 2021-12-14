@@ -903,7 +903,7 @@ void myObjType::computeVertexNormals()
 		vnlist[i][2] /= magnitude;
 	}
 
-	cout << "Vertex normals calculated" << endl;
+	// cout << "Vertex normals calculated" << endl;
 }
 // Lab 2 Optional Task - Vertex Normals End
 

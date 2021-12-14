@@ -1,10 +1,24 @@
-﻿  mesh.cpp
-c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(57): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(202): warning C4018: '<': signed/unsigned mismatch
-c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(483): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(700): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(719): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(1171): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+﻿  laplacianDeformation.cpp
+c:\users\zeyu\desktop\3242-modelling\lab 01\laplaciandeformation.cpp(28): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+c:\users\zeyu\desktop\3242-modelling\lab 01\laplaciandeformation.cpp(182): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\laplaciandeformation.cpp(225): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\laplaciandeformation.cpp(295): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  main.cpp
+c:\users\zeyu\desktop\3242-modelling\lab 01\main.cpp(391): warning C4244: '+=': conversion from 'double' to 'GLfloat', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\main.cpp(460): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+  mesh.cpp
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(35): warning C4305: 'initializing': truncation from 'double' to 'float'
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(56): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(201): warning C4018: '<': signed/unsigned mismatch
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(482): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(699): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(718): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
 c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(1172): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+c:\users\zeyu\desktop\3242-modelling\lab 01\mesh.cpp(1173): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+  meshDecimation.cpp
+c:\users\zeyu\desktop\3242-modelling\lab 01\meshdecimation.cpp(516): warning C4267: '-=': conversion from 'size_t' to 'int', possible loss of data
+  meshSubdivisionAndRelaxation.cpp
+  Generating Code...
+c:\users\zeyu\desktop\3242-modelling\lab 01\utils.h(77): warning C4172: returning address of local variable or temporary: angles
 c:\users\zeyu\desktop\3242-modelling\lab 01\utils.h(77): warning C4172: returning address of local variable or temporary: angles
   Lab 01.vcxproj -> C:\Users\ZeYu\Desktop\3242-modelling\x64\Debug\Lab 01.exe

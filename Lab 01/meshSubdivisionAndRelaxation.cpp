@@ -119,6 +119,7 @@ void myObjType::subdivide()
 			OrTri adjacentTriangle = fnext(makeOrTri(t, v)); // triangle adjacent to version i of current triangle
 			int adjacentTriangleVer = ver(adjacentTriangle) % 3; // normalized version
 			int adjacentTriangleIdx = idx(adjacentTriangle);
+			adjacentTriangle = makeOrTri(adjacentTriangleIdx, adjacentTriangleVer);
 
 			bool isBoundary = !selectedT.test(adjacentTriangleIdx);
 			if (isBoundary)
@@ -126,9 +127,26 @@ void myObjType::subdivide()
 				tcount++;
 
 				// New tlist
-				tlist[tcount][0] = tlist[adjacentTriangleIdx][(adjacentTriangleVer + 1) % 3];
-				tlist[tcount][1] = tlist[adjacentTriangleIdx][(adjacentTriangleVer + 2) % 3];
-				tlist[tcount][2] = newMidpointVertices[v];
+				tlist[tcount][0] = tlist[adjacentTriangleIdx][(adjacentTriangleVer + 1) % 3]; // given to new triangle
+				tlist[tcount][1] = tlist[adjacentTriangleIdx][(adjacentTriangleVer + 2) % 3]; // still common to both
+				tlist[tcount][2] = newMidpointVertices[v];                                    // new midpoint common to both
+
+				// Fnlist for the other two triangle versions
+				// also needs to be updated manually here, as we may have a "pacman" shaped selection
+				// The triangle inside the pacman mouth may be partially subdivided twice or even thrice.
+
+				// defer updating fnlist[tcount][0] to computeFnList, because it will never be subdivided again in the same run
+				OrTri otherTriangle1 = fnext(enext(adjacentTriangle));
+				int otherTriangle1Idx = idx(otherTriangle1);
+				int otherTriangle1Ver = ver(otherTriangle1) % 3; // normalized ver
+				OrTri otherTriangle2 = fnext(enext(enext(adjacentTriangle)));
+				int otherTriangle2Idx = idx(otherTriangle2);
+				int otherTriangle2Ver = ver(otherTriangle2) % 3; // normalized ver
+
+				fnlist[otherTriangle1Idx][otherTriangle1Ver] = makeOrTri(tcount,
+					ver(otherTriangle1) < 3 ? 0 : 3);
+				fnlist[otherTriangle2Idx][otherTriangle2Ver] = makeOrTri(adjacentTriangleIdx,
+					ver(otherTriangle2) < 3 ? (adjacentTriangleVer + 2) % 3 : adjacentTriangleVer + 2);
 				
 				for (int j = 0; j < 3; j++)
 				{
@@ -141,8 +159,8 @@ void myObjType::subdivide()
 				vToTList[newMidpointVertices[v]].push_back(adjacentTriangleIdx);     // new v -> t mapping
 				vToTList[tlist[adjacentTriangleIdx][(adjacentTriangleVer + 1) % 3]].remove(adjacentTriangleIdx); // remove old mapping
 
-				// Update tlist - just middle vertex
-				tlist[adjacentTriangleIdx][(adjacentTriangleVer + 1) % 3] = newMidpointVertices[v];
+				// Update old tlist - just the middle vertex needs to be moved
+				tlist[adjacentTriangleIdx][(adjacentTriangleVer + 1) % 3] = newMidpointVertices[v]; // new midpoint common to both
 			}
 		}
 	}
